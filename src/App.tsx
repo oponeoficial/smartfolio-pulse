@@ -9,6 +9,7 @@ import Market from "./pages/Market";
 import AITrading from "./pages/AITrading";
 import Education from "./pages/Education";
 import Portfolio from "./pages/Portfolio";
+import AnalysesPublic from "./pages/AnalysesPublic";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/market" element={<Market />} />
             <Route path="/ai" element={<AITrading />} />
+            <Route path="/analyses-public" element={<AnalysesPublic />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/education" element={<Education />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

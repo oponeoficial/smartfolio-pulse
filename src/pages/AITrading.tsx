@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { Bot, Sparkles, TrendingUp, BarChart3, Target, Brain, Clock } from "lucide-react";
+import { Bot, Sparkles, TrendingUp, BarChart3, Target, Brain, Clock, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecommendationCard } from "@/components/RecommendationCard";
 
 export default function AITrading() {
+  const navigate = useNavigate();
   const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([
     { role: "assistant", content: "Olá! Sou seu assistente de trading com IA. Como posso ajudar você hoje?" },
   ]);
@@ -21,6 +23,11 @@ export default function AITrading() {
       change: 2.3,
       targetPrice: 195.50,
       stopLoss: 172.00,
+      entryPrices: {
+        conservative: 176.80,
+        moderate: 178.10,
+        aggressive: 179.40,
+      },
       reason:
         "Análise técnica: MACD cruzamento positivo + RSI em 58 (zona neutra-positiva). Fundamentos: EPS crescente 12% YoY. Sentimento: 78% positivo nas notícias.",
     },
@@ -33,6 +40,11 @@ export default function AITrading() {
       change: 5.7,
       targetPrice: 580.00,
       stopLoss: 470.00,
+      entryPrices: {
+        conservative: 490.00,
+        moderate: 495.00,
+        aggressive: 500.00,
+      },
       reason:
         "Forte momentum de alta sustentado. Volume 2.3x acima da média. Padrão de rompimento de resistência confirmado. Setor de IA em expansão.",
     },
@@ -45,6 +57,11 @@ export default function AITrading() {
       change: -1.2,
       targetPrice: 260.00,
       stopLoss: 230.00,
+      entryPrices: {
+        conservative: 240.00,
+        moderate: 242.00,
+        aggressive: 244.00,
+      },
       reason:
         "Consolidação após rally recente. RSI em 52 sugere lateralização. Aguardar confirmação de tendência antes de entrar/sair.",
     },
@@ -84,9 +101,9 @@ export default function AITrading() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-4xl font-bold mb-2">
-            IA <span className="gradient-gold">Trading</span>
+            Análises <span className="gradient-gold">Públicas da IA</span>
           </h1>
-          <p className="text-muted-foreground">Recomendações inteligentes e análise avançada</p>
+          <p className="text-muted-foreground">Análises inteligentes para suas decisões de trading</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/20">
           <Brain className="w-5 h-5 text-gold animate-pulse" />
@@ -115,10 +132,10 @@ export default function AITrading() {
       </div>
 
       {/* Tabs System */}
-      <Tabs defaultValue="recommendations" className="space-y-6">
+      <Tabs defaultValue="analyses" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3 bg-secondary/50 p-1">
-          <TabsTrigger value="recommendations" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold">
-            Recomendações
+          <TabsTrigger value="analyses" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold">
+            Principais Análises
           </TabsTrigger>
           <TabsTrigger value="chat" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold">
             Assistente IA
@@ -128,18 +145,27 @@ export default function AITrading() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Recommendations Tab */}
-        <TabsContent value="recommendations" className="space-y-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-lg bg-gold/10 border border-gold/20 animate-glow-pulse">
-              <Sparkles className="w-5 h-5 text-gold" />
+        {/* Analyses Tab */}
+        <TabsContent value="analyses" className="space-y-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gold/10 border border-gold/20 animate-glow-pulse">
+                <Sparkles className="w-5 h-5 text-gold" />
+              </div>
+              <div>
+                <h2 className="font-display text-2xl font-bold">Principais Análises</h2>
+                <p className="text-sm text-muted-foreground">
+                  Análise multi-fatores: técnica, fundamental e sentimento
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-display text-2xl font-bold">Recomendações com IA</h2>
-              <p className="text-sm text-muted-foreground">
-                Análise multi-fatores: técnica, fundamental e sentimento
-              </p>
-            </div>
+            <Button 
+              onClick={() => navigate('/analyses-public')}
+              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white"
+            >
+              Ver todas as análises
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -148,39 +174,6 @@ export default function AITrading() {
                 <RecommendationCard {...rec} />
               </div>
             ))}
-          </div>
-
-          <div className="glass-card p-6">
-            <h3 className="font-display text-lg font-bold mb-4">Como a IA Funciona</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-3">
-                  <TrendingUp className="w-6 h-6 text-primary" />
-                </div>
-                <p className="font-semibold mb-1">Análise Técnica</p>
-                <p className="text-sm text-muted-foreground">
-                  MACD, RSI, Bollinger Bands, Volume
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto mb-3">
-                  <BarChart3 className="w-6 h-6 text-gold" />
-                </div>
-                <p className="font-semibold mb-1">Fundamentos</p>
-                <p className="text-sm text-muted-foreground">
-                  P/E, EPS, ROE, crescimento
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-success/10 border border-success/20 flex items-center justify-center mx-auto mb-3">
-                  <Brain className="w-6 h-6 text-success" />
-                </div>
-                <p className="font-semibold mb-1">Sentimento</p>
-                <p className="text-sm text-muted-foreground">
-                  Análise de notícias e redes sociais
-                </p>
-              </div>
-            </div>
           </div>
         </TabsContent>
 

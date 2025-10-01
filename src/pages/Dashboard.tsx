@@ -21,6 +21,11 @@ export default function Dashboard() {
       change: 2.3,
       targetPrice: 195.50,
       stopLoss: 172.00,
+      entryPrices: {
+        conservative: 176.80,
+        moderate: 178.10,
+        aggressive: 179.40,
+      },
       reason:
         "Indicadores técnicos mostram momentum positivo com rompimento de resistência. Volume crescente indica interesse institucional.",
     },
@@ -33,6 +38,11 @@ export default function Dashboard() {
       change: -1.2,
       targetPrice: 260.00,
       stopLoss: 230.00,
+      entryPrices: {
+        conservative: 240.00,
+        moderate: 242.00,
+        aggressive: 244.00,
+      },
       reason:
         "Aguardar consolidação do preço após rally recente. RSI em zona neutra sugere lateralização no curto prazo.",
     },
@@ -45,6 +55,11 @@ export default function Dashboard() {
       change: 5.7,
       targetPrice: 580.00,
       stopLoss: 470.00,
+      entryPrices: {
+        conservative: 490.00,
+        moderate: 495.00,
+        aggressive: 500.00,
+      },
       reason:
         "Tendência de alta sustentada com fundamentos sólidos. IA continua impulsionando demanda por GPUs no mercado corporativo.",
     },
@@ -75,14 +90,14 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* AI Recommendations */}
+      {/* AI Analyses */}
       <div>
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h2 className="font-display text-2xl font-bold">Recomendações IA</h2>
+            <h2 className="font-display text-2xl font-bold">Análises Públicas da IA</h2>
             <p className="text-sm text-muted-foreground">Atualizadas há 5 minutos</p>
           </div>
         </div>

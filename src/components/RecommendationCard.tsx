@@ -12,6 +12,11 @@ interface RecommendationCardProps {
   reason: string;
   targetPrice: number;
   stopLoss: number;
+  entryPrices?: {
+    conservative: number;
+    moderate: number;
+    aggressive: number;
+  };
 }
 
 export function RecommendationCard({
@@ -24,6 +29,7 @@ export function RecommendationCard({
   reason,
   targetPrice,
   stopLoss,
+  entryPrices,
 }: RecommendationCardProps) {
   const actionConfig = {
     buy: {
@@ -78,6 +84,26 @@ export function RecommendationCard({
         </div>
       </div>
 
+      {entryPrices && (
+        <div className="mb-4 p-4 bg-secondary/30 rounded-lg border border-gold/20">
+          <p className="text-sm font-semibold mb-3 text-gold">Preços de Entrada Sugeridos</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">• Entrada 1 (conservador)</span>
+              <span className="font-semibold text-success/70">R$ {entryPrices.conservative.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">• Entrada 2 (moderado)</span>
+              <span className="font-semibold text-success">R$ {entryPrices.moderate.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">• Entrada 3 (agressivo)</span>
+              <span className="font-semibold text-success/90">R$ {entryPrices.aggressive.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="p-3 bg-secondary/50 rounded-lg border border-gold/20">
           <p className="text-xs text-muted-foreground mb-1">Preço Alvo</p>
@@ -116,7 +142,7 @@ export function RecommendationCard({
       </div>
 
       <Button variant={config.color as any} className="w-full">
-        {config.label}
+        Aplicar à Carteira
       </Button>
     </div>
   );
