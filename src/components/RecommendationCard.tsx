@@ -10,6 +10,8 @@ interface RecommendationCardProps {
   price: number;
   change: number;
   reason: string;
+  targetPrice: number;
+  stopLoss: number;
 }
 
 export function RecommendationCard({
@@ -20,6 +22,8 @@ export function RecommendationCard({
   price,
   change,
   reason,
+  targetPrice,
+  stopLoss,
 }: RecommendationCardProps) {
   const actionConfig = {
     buy: {
@@ -44,6 +48,9 @@ export function RecommendationCard({
 
   const config = actionConfig[action];
   const ActionIcon = config.icon;
+  
+  const targetGain = ((targetPrice - price) / price) * 100;
+  const stopLossPercent = ((stopLoss - price) / price) * 100;
 
   return (
     <div className="glass-card p-6 hover-scale">
@@ -67,6 +74,23 @@ export function RecommendationCard({
             )}
           >
             {change > 0 ? "+" : ""}{change.toFixed(2)}%
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="p-3 bg-secondary/50 rounded-lg border border-gold/20">
+          <p className="text-xs text-muted-foreground mb-1">Preço Alvo</p>
+          <p className="text-lg font-bold text-gold">R$ {targetPrice.toFixed(2)}</p>
+          <p className={cn("text-xs font-semibold", targetGain > 0 ? "text-success" : "text-danger")}>
+            {targetGain > 0 ? "+" : ""}{targetGain.toFixed(1)}%
+          </p>
+        </div>
+        <div className="p-3 bg-secondary/50 rounded-lg border border-gold/20">
+          <p className="text-xs text-muted-foreground mb-1">Stop Loss</p>
+          <p className="text-lg font-bold text-danger">R$ {stopLoss.toFixed(2)}</p>
+          <p className={cn("text-xs font-semibold", stopLossPercent < 0 ? "text-danger" : "text-success")}>
+            {stopLossPercent.toFixed(1)}%
           </p>
         </div>
       </div>

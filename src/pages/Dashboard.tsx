@@ -19,6 +19,8 @@ export default function Dashboard() {
       confidence: 87,
       price: 178.45,
       change: 2.3,
+      targetPrice: 195.50,
+      stopLoss: 172.00,
       reason:
         "Indicadores técnicos mostram momentum positivo com rompimento de resistência. Volume crescente indica interesse institucional.",
     },
@@ -29,6 +31,8 @@ export default function Dashboard() {
       confidence: 72,
       price: 242.15,
       change: -1.2,
+      targetPrice: 260.00,
+      stopLoss: 230.00,
       reason:
         "Aguardar consolidação do preço após rally recente. RSI em zona neutra sugere lateralização no curto prazo.",
     },
@@ -39,6 +43,8 @@ export default function Dashboard() {
       confidence: 91,
       price: 495.22,
       change: 5.7,
+      targetPrice: 580.00,
+      stopLoss: 470.00,
       reason:
         "Tendência de alta sustentada com fundamentos sólidos. IA continua impulsionando demanda por GPUs no mercado corporativo.",
     },

@@ -19,6 +19,8 @@ export default function AITrading() {
       confidence: 87,
       price: 178.45,
       change: 2.3,
+      targetPrice: 195.50,
+      stopLoss: 172.00,
       reason:
         "Análise técnica: MACD cruzamento positivo + RSI em 58 (zona neutra-positiva). Fundamentos: EPS crescente 12% YoY. Sentimento: 78% positivo nas notícias.",
     },
@@ -29,6 +31,8 @@ export default function AITrading() {
       confidence: 91,
       price: 495.22,
       change: 5.7,
+      targetPrice: 580.00,
+      stopLoss: 470.00,
       reason:
         "Forte momentum de alta sustentado. Volume 2.3x acima da média. Padrão de rompimento de resistência confirmado. Setor de IA em expansão.",
     },
@@ -39,6 +43,8 @@ export default function AITrading() {
       confidence: 72,
       price: 242.15,
       change: -1.2,
+      targetPrice: 260.00,
+      stopLoss: 230.00,
       reason:
         "Consolidação após rally recente. RSI em 52 sugere lateralização. Aguardar confirmação de tendência antes de entrar/sair.",
     },
