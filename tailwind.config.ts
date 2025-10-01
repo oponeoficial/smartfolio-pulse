@@ -15,7 +15,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
-        display: ['Poppins', 'sans-serif'],
+        display: ['Playfair Display', 'serif'],
+        serif: ['Playfair Display', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -31,6 +32,11 @@ export default {
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
+        },
+        gold: {
+          DEFAULT: "hsl(var(--gold))",
+          light: "hsl(var(--gold-light))",
+          dark: "hsl(var(--gold-dark))",
         },
         success: {
           DEFAULT: "hsl(var(--success))",
@@ -68,6 +74,8 @@ export default {
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
+        'gradient-gold': 'var(--gradient-gold)',
+        'gradient-blue-gold': 'var(--gradient-blue-gold)',
         'gradient-success': 'var(--gradient-success)',
         'gradient-danger': 'var(--gradient-danger)',
         'gradient-card': 'var(--gradient-card)',
@@ -77,6 +85,7 @@ export default {
         'sm': 'var(--shadow-sm)',
         'md': 'var(--shadow-md)',
         'lg': 'var(--shadow-lg)',
+        'gold': 'var(--shadow-gold)',
         'glow': 'var(--shadow-glow)',
       },
       borderRadius: {
@@ -102,8 +111,8 @@ export default {
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
         "glow-pulse": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(160 84% 39% / 0.3)" },
-          "50%": { boxShadow: "0 0 40px hsl(160 84% 39% / 0.6)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(45 80% 52% / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(45 80% 52% / 0.6)" },
         },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },

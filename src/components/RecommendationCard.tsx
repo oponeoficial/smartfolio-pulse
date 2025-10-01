@@ -84,9 +84,9 @@ export function RecommendationCard({
         </div>
       </div>
 
-      <div className="mb-4 p-3 bg-secondary/50 rounded-lg border border-border/50">
+      <div className="mb-4 p-3 bg-secondary/50 rounded-lg border border-gold/20">
         <div className="flex items-start gap-2">
-          <Sparkles className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
+          <Sparkles className="w-4 h-4 text-gold mt-1 flex-shrink-0" />
           <p className="text-sm text-muted-foreground">{reason}</p>
         </div>
       </div>

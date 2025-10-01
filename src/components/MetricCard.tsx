@@ -16,8 +16,8 @@ export function MetricCard({ title, value, change, icon: Icon, trend = "neutral"
   return (
     <div className="metric-card">
       <div className="flex items-start justify-between mb-4">
-        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-          <Icon className="w-6 h-6 text-primary" />
+        <div className="p-3 rounded-lg bg-gold/10 border border-gold/20">
+          <Icon className="w-6 h-6 text-gold" />
         </div>
         <div
           className={cn(

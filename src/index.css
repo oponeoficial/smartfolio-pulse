@@ -1,33 +1,36 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* TradeAI Design System - Premium Financial Platform */
+/* TradeAI Design System - Premium Blue & Gold Financial Platform */
 
 @layer base {
   :root {
-    /* Base colors - Deep professional palette */
-    --background: 216 28% 7%;
+    /* Base colors - Deep luxury blue palette */
+    --background: 216 53% 10%;
     --foreground: 210 40% 98%;
     
-    /* Card system - Glassmorphic */
-    --card: 217 33% 10%;
+    /* Card system - Premium glassmorphic */
+    --card: 215 50% 14%;
     --card-foreground: 210 40% 98%;
-    --card-glass: 217 33% 12%;
+    --card-glass: 215 50% 16%;
     
     /* Surface colors */
-    --popover: 217 33% 10%;
+    --popover: 215 50% 14%;
     --popover-foreground: 210 40% 98%;
     
-    /* Brand colors - Financial theme */
-    --primary: 160 84% 39%;
+    /* Brand colors - Blue & Gold theme */
+    --primary: 214 60% 40%;
     --primary-foreground: 210 40% 98%;
-    --primary-glow: 160 84% 49%;
+    --primary-glow: 214 60% 50%;
     
-    --secondary: 217 33% 17%;
+    --secondary: 214 50% 22%;
     --secondary-foreground: 210 40% 98%;
+    
+    /* Gold accents - Luxury highlights */
+    --gold: 45 80% 52%;
+    --gold-light: 50 90% 75%;
+    --gold-dark: 45 70% 40%;
     
     /* Status colors - Financial indicators */
     --success: 142 76% 36%;
@@ -35,41 +38,46 @@
     --danger: 0 84% 60%;
     --danger-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
-    --warning-foreground: 217 33% 10%;
+    --warning-foreground: 215 50% 14%;
     
     /* UI elements */
-    --muted: 217 33% 17%;
+    --muted: 214 50% 22%;
     --muted-foreground: 215 20% 65%;
     
-    --accent: 160 84% 39%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 45 80% 52%;
+    --accent-foreground: 215 50% 14%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
     
     /* Borders & inputs */
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 160 84% 39%;
+    --border: 214 50% 22%;
+    --border-gold: 45 80% 52%;
+    --input: 214 50% 22%;
+    --ring: 45 80% 52%;
     
     /* Radius */
     --radius: 0.75rem;
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(160 84% 39%), hsl(160 84% 49%));
+    /* Gradients - Blue & Gold luxury */
+    --gradient-primary: linear-gradient(135deg, hsl(214 60% 40%), hsl(214 60% 50%));
+    --gradient-gold: linear-gradient(135deg, hsl(45 80% 52%), hsl(50 90% 75%));
+    --gradient-blue-gold: linear-gradient(135deg, hsl(214 60% 40%), hsl(45 80% 52%));
     --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
     --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 70%));
-    --gradient-card: linear-gradient(135deg, hsl(217 33% 10% / 0.6), hsl(217 33% 15% / 0.4));
-    --gradient-hero: linear-gradient(135deg, hsl(217 33% 10%), hsl(160 84% 39% / 0.1));
+    --gradient-card: linear-gradient(135deg, hsl(215 50% 14% / 0.8), hsl(215 50% 18% / 0.6));
+    --gradient-hero: linear-gradient(135deg, hsl(216 53% 10%), hsl(45 80% 52% / 0.1));
     
-    /* Shadows - Glassmorphic */
-    --shadow-sm: 0 2px 8px hsl(217 33% 5% / 0.3);
-    --shadow-md: 0 4px 16px hsl(217 33% 5% / 0.4);
-    --shadow-lg: 0 8px 32px hsl(217 33% 5% / 0.5);
-    --shadow-glow: 0 0 32px hsl(160 84% 39% / 0.3);
+    /* Shadows - Premium luxury */
+    --shadow-sm: 0 2px 8px hsl(215 50% 5% / 0.4);
+    --shadow-md: 0 4px 16px hsl(215 50% 5% / 0.5);
+    --shadow-lg: 0 8px 32px hsl(215 50% 5% / 0.6);
+    --shadow-gold: 0 0 32px hsl(45 80% 52% / 0.4);
+    --shadow-glow: 0 0 40px hsl(45 80% 52% / 0.3);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
   }
 }
 
@@ -84,40 +92,49 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Playfair Display', serif;
     @apply font-semibold;
   }
 }
 
 @layer components {
-  /* Glassmorphic card */
+  /* Premium glassmorphic card with gold border */
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/10 rounded-xl;
+    @apply bg-card/60 backdrop-blur-xl border border-gold/20 rounded-xl;
     box-shadow: var(--shadow-md);
   }
   
-  /* Premium gradient text */
+  /* Gold gradient text */
   .gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: var(--gradient-primary);
+    background-image: var(--gradient-blue-gold);
   }
   
-  /* Hover scale effect */
+  .gradient-gold {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-gold);
+  }
+  
+  /* Hover scale with glow */
   .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
+    @apply transition-all duration-300 hover:scale-105;
   }
   
-  /* Glow effect */
+  .hover-glow {
+    @apply transition-all duration-300 hover:shadow-gold;
+  }
+  
+  /* Gold glow effect */
   .glow {
-    box-shadow: var(--shadow-glow);
+    box-shadow: var(--shadow-gold);
   }
   
-  /* Metric card animation */
+  /* Premium metric card */
   .metric-card {
-    @apply glass-card p-6 hover-scale transition-all;
+    @apply glass-card p-6 hover-scale hover-glow transition-all;
   }
   
-  /* Status indicators */
+  /* Status indicators with gold accents */
   .status-positive {
     @apply text-success;
   }
@@ -128,6 +145,15 @@
   
   .status-neutral {
     @apply text-muted-foreground;
+  }
+  
+  .status-premium {
+    @apply text-gold;
+  }
+  
+  /* Gold border accent */
+  .border-gold-accent {
+    @apply border-l-4 border-gold;
   }
 }
 
