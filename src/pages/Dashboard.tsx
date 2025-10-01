@@ -2,9 +2,6 @@ import { TrendingUp, DollarSign, Activity, PieChart, Sparkles } from "lucide-rea
 import { MetricCard } from "@/components/MetricCard";
 import { RecommendationCard } from "@/components/RecommendationCard";
 import { Button } from "@/components/ui/button";
-import Semaphore from "@/components/Semaphore";
-import ProgressRing from "@/components/ProgressRing";
-import DividendsCard from "@/components/DividendsCard";
 
 export default function Dashboard() {
   const metrics = [
@@ -69,25 +66,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-12 animate-fade-in">
-      {/* Premium Dashboard Section */}
-      <div className="grid grid-cols-1 gap-8 md:gap-12 mb-12">
-        {/* Semaphore - 40% visual weight */}
-        <div className="flex justify-center py-8">
-          <Semaphore state="healthy" />
-        </div>
-
-        {/* Progress Ring - 30% visual weight */}
-        <div className="flex justify-center py-6">
-          <ProgressRing />
-        </div>
-
-        {/* Dividends Card - 30% visual weight */}
-        <div className="max-w-2xl mx-auto w-full">
-          <DividendsCard />
-        </div>
-      </div>
-
+    <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
