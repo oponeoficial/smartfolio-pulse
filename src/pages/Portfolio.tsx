@@ -22,6 +22,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioKPIs } from "@/components/PortfolioKPIs";
 import { useRebalanceLogic } from "@/hooks/useRebalanceLogic";
+import { AddAssetModal } from "@/components/AddAssetModal";
+import { OrderHistory } from "@/components/OrderHistory";
 
 interface Portfolio {
   id: string;
@@ -39,6 +41,7 @@ interface Asset {
   currentPrice: number;
   allocation: number;
   dividends: number;
+  brokerage: number;
   type: 'stock' | 'reit' | 'fixedIncome' | 'crypto';
 }
 
@@ -63,14 +66,15 @@ export default function Portfolio() {
   const [newPortfolioCurrency, setNewPortfolioCurrency] = useState("BRL");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isStrategyDialogOpen, setIsStrategyDialogOpen] = useState(false);
+  const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState("OpOne AI");
 
   const assets: Asset[] = [
-    { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, type: 'stock' },
-    { symbol: "VALE3", name: "Vale ON", quantity: 100, avgPrice: 68.0, currentPrice: 72.15, allocation: 25, dividends: 420.00, type: 'stock' },
-    { symbol: "ITUB4", name: "Itaú Unibanco PN", quantity: 200, avgPrice: 28.5, currentPrice: 30.80, allocation: 20, dividends: 340.00, type: 'stock' },
-    { symbol: "HGLG11", name: "CSHG Logística FII", quantity: 80, avgPrice: 145.0, currentPrice: 152.30, allocation: 15, dividends: 680.00, type: 'reit' },
-    { symbol: "BBAS3", name: "Banco do Brasil ON", quantity: 120, avgPrice: 42.0, currentPrice: 45.60, allocation: 5, dividends: 195.00, type: 'stock' },
+    { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, brokerage: 25.00, type: 'stock' },
+    { symbol: "VALE3", name: "Vale ON", quantity: 100, avgPrice: 68.0, currentPrice: 72.15, allocation: 25, dividends: 420.00, brokerage: 35.00, type: 'stock' },
+    { symbol: "ITUB4", name: "Itaú Unibanco PN", quantity: 200, avgPrice: 28.5, currentPrice: 30.80, allocation: 20, dividends: 340.00, brokerage: 18.50, type: 'stock' },
+    { symbol: "HGLG11", name: "CSHG Logística FII", quantity: 80, avgPrice: 145.0, currentPrice: 152.30, allocation: 15, dividends: 680.00, brokerage: 45.00, type: 'reit' },
+    { symbol: "BBAS3", name: "Banco do Brasil ON", quantity: 120, avgPrice: 42.0, currentPrice: 45.60, allocation: 5, dividends: 195.00, brokerage: 22.00, type: 'stock' },
   ];
 
   const closedPositions: ClosedPosition[] = [
@@ -171,7 +175,13 @@ export default function Portfolio() {
             </h1>
             <p className="text-muted-foreground">Gerencie seus investimentos e acompanhe performance</p>
           </div>
-          <Select value={selectedPortfolio} onValueChange={setSelectedPortfolio}>
+          <Select value={selectedPortfolio} onValueChange={(value) => {
+            if (value === "new") {
+              setIsCreateDialogOpen(true);
+            } else {
+              setSelectedPortfolio(value);
+            }
+          }}>
             <SelectTrigger className="w-[200px] glass-card border-gold/30">
               <SelectValue />
             </SelectTrigger>
@@ -181,6 +191,10 @@ export default function Portfolio() {
                   {portfolio.name}
                 </SelectItem>
               ))}
+              <SelectItem value="new" className="text-gold font-semibold border-t border-border/50 mt-1 pt-2">
+                <Plus className="w-4 h-4 mr-2 inline" />
+                Nova Carteira...
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -229,12 +243,6 @@ export default function Portfolio() {
           </Dialog>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="default" size="lg">
-                <Plus className="w-5 h-5 mr-2" />
-                Nova Carteira
-              </Button>
-            </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle className="text-2xl gradient-gold">Criar Nova Carteira</DialogTitle>
@@ -275,12 +283,23 @@ export default function Portfolio() {
             </DialogContent>
           </Dialog>
 
-          <Button variant="default" size="lg">
+          <Button 
+            variant="default" 
+            size="lg"
+            onClick={() => setIsAddAssetModalOpen(true)}
+            className="bg-[#00C853] hover:bg-[#00B248]"
+          >
             <Plus className="w-5 h-5 mr-2" />
             Adicionar Ativo
           </Button>
         </div>
       </div>
+
+      <AddAssetModal 
+        open={isAddAssetModalOpen} 
+        onOpenChange={setIsAddAssetModalOpen}
+        currency={currentPortfolio?.currency || "BRL"}
+      />
 
       {/* KPIs Grid */}
       <PortfolioKPIs
@@ -296,7 +315,8 @@ export default function Portfolio() {
       <Tabs defaultValue="positions" className="space-y-6">
         <TabsList className="glass-card">
           <TabsTrigger value="positions">Posições Abertas</TabsTrigger>
-          <TabsTrigger value="history">Histórico de Operações</TabsTrigger>
+          <TabsTrigger value="closed">Operações Finalizadas</TabsTrigger>
+          <TabsTrigger value="orders">Histórico de Ordens</TabsTrigger>
         </TabsList>
 
         <TabsContent value="positions" className="space-y-6">
@@ -314,15 +334,25 @@ export default function Portfolio() {
                     <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Preço Médio</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Preço Atual</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Lucro/Prejuízo</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">Total Investido</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">Total Hoje</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Dividendos</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Sem Dividendos</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Com Dividendos</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Alocação</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Situação</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Insight</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
                   {assets.map((asset, index) => {
-                    const pl = calculatePL(asset.quantity, asset.avgPrice, asset.currentPrice);
+                    const currencySymbol = currentPortfolio?.currency === "BRL" ? "R$" : currentPortfolio?.currency === "USD" ? "US$" : "€";
+                    const totalInvested = asset.quantity * asset.avgPrice;
+                    const totalToday = asset.quantity * asset.currentPrice;
+                    const plWithoutDividends = totalToday - totalInvested;
+                    const plWithDividends = (totalToday + asset.dividends) - totalInvested;
+                    const plPercentWithoutDiv = (plWithoutDividends / totalInvested) * 100;
+                    const plPercentWithDiv = (plWithDividends / totalInvested) * 100;
                     const rebalanceAction = rebalanceActions[index];
                     
                     return (
@@ -334,21 +364,34 @@ export default function Portfolio() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">{asset.quantity}</td>
-                        <td className="px-6 py-4 text-right">R$ {asset.avgPrice.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right font-semibold">R$ {asset.currentPrice.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {asset.avgPrice.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right font-semibold">{currencySymbol} {asset.currentPrice.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {totalInvested.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right font-semibold">{currencySymbol} {totalToday.toFixed(2)}</td>
                         <td className="px-6 py-4 text-right">
-                          <div className={pl.total >= 0 ? "text-success" : "text-danger"}>
+                          <p className="font-semibold">{currencySymbol} {asset.dividends.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">este ano</p>
+                        </td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {asset.brokerage.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className={plWithoutDividends >= 0 ? "text-success" : "text-danger"}>
                             <p className="font-semibold">
-                              {pl.total >= 0 ? '+' : ''}R$ {pl.total.toFixed(2)}
+                              {plWithoutDividends >= 0 ? '+' : ''}{currencySymbol} {plWithoutDividends.toFixed(2)}
                             </p>
                             <p className="text-sm">
-                              ({pl.percent >= 0 ? '+' : ''}{pl.percent.toFixed(1)}%)
+                              ({plPercentWithoutDiv >= 0 ? '+' : ''}{plPercentWithoutDiv.toFixed(1)}%)
                             </p>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <p className="font-semibold">R$ {asset.dividends.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">este ano</p>
+                          <div className={plWithDividends >= 0 ? "text-success" : "text-danger"}>
+                            <p className="font-semibold">
+                              {plWithDividends >= 0 ? '+' : ''}{currencySymbol} {plWithDividends.toFixed(2)}
+                            </p>
+                            <p className="text-sm">
+                              ({plPercentWithDiv >= 0 ? '+' : ''}{plPercentWithDiv.toFixed(1)}%)
+                            </p>
+                          </div>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -381,7 +424,7 @@ export default function Portfolio() {
           </div>
         </TabsContent>
 
-        <TabsContent value="history" className="space-y-6">
+        <TabsContent value="closed" className="space-y-6">
           {/* Performance Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="glass-card p-6">
@@ -448,41 +491,48 @@ export default function Portfolio() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {closedPositions.map((position) => (
-                    <tr key={position.symbol + position.exitDate} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-semibold">{position.symbol}</p>
-                          <p className="text-sm text-muted-foreground">{position.name}</p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm">
-                        {new Date(position.entryDate).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-6 py-4 text-right text-sm">
-                        {new Date(position.exitDate).toLocaleDateString("pt-BR")}
-                      </td>
-                      <td className="px-6 py-4 text-right">R$ {position.entryPrice.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-right">R$ {position.exitPrice.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-right">{position.quantity}</td>
-                      <td className="px-6 py-4 text-right">
-                        <div className={position.returnValue >= 0 ? "text-success" : "text-danger"}>
-                          <p className="font-semibold">
-                            R$ {position.returnValue >= 0 ? "+" : ""}
-                            {position.returnValue.toFixed(2)}
-                          </p>
-                          <p className="text-sm">
-                            ({position.returnPercent >= 0 ? "+" : ""}
-                            {position.returnPercent.toFixed(2)}%)
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {closedPositions.map((position) => {
+                    const currencySymbol = currentPortfolio?.currency === "BRL" ? "R$" : currentPortfolio?.currency === "USD" ? "US$" : "€";
+                    return (
+                      <tr key={position.symbol + position.exitDate} className="hover:bg-secondary/30 transition-colors">
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-semibold">{position.symbol}</p>
+                            <p className="text-sm text-muted-foreground">{position.name}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm">
+                          {new Date(position.entryDate).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="px-6 py-4 text-right text-sm">
+                          {new Date(position.exitDate).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {position.entryPrice.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {position.exitPrice.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">{position.quantity}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className={position.returnValue >= 0 ? "text-success" : "text-danger"}>
+                            <p className="font-semibold">
+                              {currencySymbol} {position.returnValue >= 0 ? "+" : ""}
+                              {position.returnValue.toFixed(2)}
+                            </p>
+                            <p className="text-sm">
+                              ({position.returnPercent >= 0 ? "+" : ""}
+                              {position.returnPercent.toFixed(2)}%)
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="orders" className="space-y-6">
+          <OrderHistory currency={currentPortfolio?.currency || "BRL"} />
         </TabsContent>
       </Tabs>
     </div>
