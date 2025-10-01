@@ -14,13 +14,14 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
 
   const config = {
     healthy: {
-      color: 'hsl(142 76% 36%)',
+      color: 'hsl(142 91% 43%)',
       bgColor: 'bg-success/10',
       borderColor: 'border-success',
       message: 'Carteira Balanceada',
       action: 'Continue acompanhando',
       icon: TrendingUp,
-      animation: 'animate-pulse-subtle',
+      animation: 'animate-pulse-healthy',
+      shadowColor: 'hsl(142 91% 43% / 0.4)',
     },
     attention: {
       color: 'hsl(38 92% 50%)',
@@ -30,6 +31,7 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
       action: 'Recomendamos rebalanceamento',
       icon: AlertTriangle,
       animation: 'animate-breathing',
+      shadowColor: 'hsl(38 92% 50% / 0.4)',
     },
     urgent: {
       color: 'hsl(0 84% 60%)',
@@ -38,7 +40,8 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
       message: 'Contate Consultor',
       action: 'Ação imediata necessária',
       icon: AlertCircle,
-      animation: 'animate-pulse',
+      animation: 'animate-pulse-urgent',
+      shadowColor: 'hsl(0 84% 60% / 0.4)',
     },
   };
 
@@ -56,19 +59,19 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
 
   return (
     <>
-      <div className="flex items-center justify-center h-[80vh] min-h-[400px]">
+      <div className="flex items-center justify-center h-[80vh] min-h-[400px] animate-fade-in">
         <button
           onClick={() => setIsModalOpen(true)}
           className={cn(
-            "relative flex flex-col items-center justify-center rounded-full transition-all duration-500 cursor-pointer hover:scale-105",
+            "relative flex flex-col items-center justify-center rounded-full transition-all duration-700 cursor-pointer hover:scale-105",
             "w-[280px] h-[280px] md:w-[400px] md:h-[400px]",
             currentConfig.bgColor,
             currentConfig.borderColor,
-            "border-4",
+            "border-[6px]",
             currentConfig.animation
           )}
           style={{
-            boxShadow: `0 0 60px ${currentConfig.color}40`,
+            boxShadow: `0 8px 64px ${currentConfig.shadowColor}, 0 0 80px ${currentConfig.shadowColor}`,
           }}
         >
           {/* Progress Ring */}
@@ -79,19 +82,20 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
               r="48%"
               fill="none"
               stroke={currentConfig.color}
-              strokeWidth="5"
+              strokeWidth="6"
               strokeDasharray={`${targetAllocation * 3.14 * 2} ${100 * 3.14 * 2}`}
-              opacity="0.3"
+              opacity="0.4"
+              className="transition-all duration-1000"
             />
           </svg>
 
           {/* Content */}
-          <div className="z-10 flex flex-col items-center">
-            <Icon className="w-12 h-12 md:w-16 md:h-16 mb-4" style={{ color: currentConfig.color }} />
-            <p className="text-4xl md:text-6xl font-display font-bold text-foreground mb-2">
+          <div className="z-10 flex flex-col items-center animate-slide-up">
+            <Icon className="w-14 h-14 md:w-20 md:h-20 mb-6 animate-float" style={{ color: currentConfig.color }} />
+            <p className="text-4xl md:text-6xl font-display font-bold text-foreground mb-3 tracking-tight">
               {formatCurrency(value)}
             </p>
-            <p className="text-lg md:text-xl font-medium" style={{ color: currentConfig.color }}>
+            <p className="text-xl md:text-2xl font-semibold tracking-wide" style={{ color: currentConfig.color }}>
               {currentConfig.message}
             </p>
           </div>
@@ -145,22 +149,40 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
       </Dialog>
 
       <style>{`
-        @keyframes pulse-subtle {
+        @keyframes pulse-healthy {
           0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.01); }
+          50% { transform: scale(1.02); }
+        }
+        
+        @keyframes pulse-urgent {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.03); }
         }
         
         @keyframes breathing {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.95; }
+          50% { opacity: 0.93; }
         }
         
-        .animate-pulse-subtle {
-          animation: pulse-subtle 3s ease-in-out infinite;
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        
+        .animate-pulse-healthy {
+          animation: pulse-healthy 4s ease-in-out infinite;
+        }
+        
+        .animate-pulse-urgent {
+          animation: pulse-urgent 2s ease-in-out infinite;
         }
         
         .animate-breathing {
-          animation: breathing 2s ease-in-out infinite;
+          animation: breathing 3s ease-in-out infinite;
+        }
+        
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
         }
       `}</style>
     </>

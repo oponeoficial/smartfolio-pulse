@@ -19,10 +19,10 @@
     --popover: 215 50% 14%;
     --popover-foreground: 210 40% 98%;
     
-    /* Brand colors - Blue & Gold theme */
-    --primary: 214 60% 40%;
+    /* Brand colors - Blue & Gold theme (mais energético) */
+    --primary: 207 90% 54%;
     --primary-foreground: 210 40% 98%;
-    --primary-glow: 214 60% 50%;
+    --primary-glow: 207 90% 64%;
     
     --secondary: 214 50% 22%;
     --secondary-foreground: 210 40% 98%;
@@ -32,8 +32,9 @@
     --gold-light: 50 90% 75%;
     --gold-dark: 45 70% 40%;
     
-    /* Status colors - Financial indicators */
-    --success: 142 76% 36%;
+    /* Status colors - Financial indicators (mais vibrantes) */
+    --success: 142 91% 43%;
+    --success-light: 142 91% 53%;
     --success-foreground: 210 40% 98%;
     --danger: 0 84% 60%;
     --danger-foreground: 210 40% 98%;
@@ -60,20 +61,20 @@
     --radius: 0.75rem;
     
     /* Gradients - Blue & Gold luxury */
-    --gradient-primary: linear-gradient(135deg, hsl(214 60% 40%), hsl(214 60% 50%));
+    --gradient-primary: linear-gradient(135deg, hsl(207 90% 54%), hsl(207 90% 64%));
     --gradient-gold: linear-gradient(135deg, hsl(45 80% 52%), hsl(50 90% 75%));
-    --gradient-blue-gold: linear-gradient(135deg, hsl(214 60% 40%), hsl(45 80% 52%));
-    --gradient-success: linear-gradient(135deg, hsl(142 76% 36%), hsl(142 76% 46%));
+    --gradient-blue-gold: linear-gradient(135deg, hsl(207 90% 54%), hsl(45 80% 52%));
+    --gradient-success: linear-gradient(135deg, hsl(142 91% 43%), hsl(142 91% 53%));
     --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%), hsl(0 84% 70%));
     --gradient-card: linear-gradient(135deg, hsl(215 50% 14% / 0.8), hsl(215 50% 18% / 0.6));
     --gradient-hero: linear-gradient(135deg, hsl(216 53% 10%), hsl(45 80% 52% / 0.1));
     
-    /* Shadows - Premium luxury */
-    --shadow-sm: 0 2px 8px hsl(215 50% 5% / 0.4);
-    --shadow-md: 0 4px 16px hsl(215 50% 5% / 0.5);
-    --shadow-lg: 0 8px 32px hsl(215 50% 5% / 0.6);
-    --shadow-gold: 0 0 32px hsl(45 80% 52% / 0.4);
-    --shadow-glow: 0 0 40px hsl(45 80% 52% / 0.3);
+    /* Shadows - Premium luxury (mais pronunciadas) */
+    --shadow-sm: 0 2px 8px hsl(215 50% 5% / 0.5);
+    --shadow-md: 0 4px 20px hsl(215 50% 5% / 0.6);
+    --shadow-lg: 0 8px 40px hsl(215 50% 5% / 0.7);
+    --shadow-gold: 0 4px 24px hsl(45 80% 52% / 0.5);
+    --shadow-glow: 0 0 50px hsl(45 80% 52% / 0.4);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -88,20 +89,28 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 400;
+    letter-spacing: -0.011em;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-    @apply font-semibold;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    @apply font-bold;
+    letter-spacing: -0.022em;
   }
 }
 
 @layer components {
   /* Premium glassmorphic card with gold border */
   .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-gold/20 rounded-xl;
+    @apply bg-card/60 backdrop-blur-xl border border-gold/20 rounded-2xl;
     box-shadow: var(--shadow-md);
+    transition: var(--transition-smooth);
+  }
+  
+  .glass-card:hover {
+    box-shadow: var(--shadow-lg);
   }
   
   /* Gold gradient text */
@@ -117,11 +126,16 @@
   
   /* Hover scale with glow */
   .hover-scale {
-    @apply transition-all duration-300 hover:scale-105;
+    @apply transition-all duration-500 ease-out hover:scale-[1.02];
   }
   
   .hover-glow {
-    @apply transition-all duration-300 hover:shadow-gold;
+    @apply transition-all duration-500 ease-out;
+  }
+  
+  .hover-glow:hover {
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-2px);
   }
   
   /* Gold glow effect */
@@ -131,7 +145,7 @@
   
   /* Premium metric card */
   .metric-card {
-    @apply glass-card p-6 hover-scale hover-glow transition-all;
+    @apply glass-card p-8 hover-scale hover-glow transition-all;
   }
   
   /* Status indicators with gold accents */

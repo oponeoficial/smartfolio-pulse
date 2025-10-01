@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Inter', 'sans-serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -39,6 +39,7 @@ export default {
         },
         success: {
           DEFAULT: "hsl(var(--success))",
+          light: "hsl(var(--success-light))",
           foreground: "hsl(var(--success-foreground))",
         },
         danger: {

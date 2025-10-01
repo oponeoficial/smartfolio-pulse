@@ -22,52 +22,62 @@ export function EssentialMetrics({ yearlyReturn, cdiComparison, monthlyDividends
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl mx-auto px-4">
       {/* Rentabilidade Card */}
       <div
         className={cn(
-          "glass-card p-6 border-2 transition-all duration-300 hover:scale-105",
-          yearlyReturn >= 0 ? "border-success/30 bg-success/5" : "border-danger/30 bg-danger/5"
+          "glass-card p-8 border-2 transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 animate-slide-up",
+          yearlyReturn >= 0 ? "border-success/40 bg-success/5" : "border-danger/40 bg-danger/5"
         )}
+        style={{
+          boxShadow: yearlyReturn >= 0 
+            ? '0 8px 32px hsl(142 91% 43% / 0.2)' 
+            : '0 8px 32px hsl(0 84% 60% / 0.2)',
+          animationDelay: '0.1s'
+        }}
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className={cn("w-6 h-6", yearlyReturn >= 0 ? "text-success" : "text-danger")} />
-              <p className="text-sm font-medium text-muted-foreground">Rentabilidade</p>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={cn(
+                "w-12 h-12 rounded-xl flex items-center justify-center",
+                yearlyReturn >= 0 ? "bg-success/20" : "bg-danger/20"
+              )}>
+                <TrendingUp className={cn("w-6 h-6", yearlyReturn >= 0 ? "text-success" : "text-danger")} />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">Rentabilidade</p>
             </div>
             <p className={cn(
-              "text-4xl font-display font-semibold mb-2",
+              "text-5xl font-display font-bold mb-3 tracking-tight",
               yearlyReturn >= 0 ? "text-success" : "text-danger"
             )}>
               {formatPercentage(yearlyReturn)}
             </p>
-            <p className="text-sm text-muted-foreground">{cdiComparison}</p>
-          </div>
-          <div className={cn(
-            "w-12 h-12 rounded-xl flex items-center justify-center",
-            yearlyReturn >= 0 ? "bg-success/20" : "bg-danger/20"
-          )}>
-            <TrendingUp className={cn("w-6 h-6", yearlyReturn >= 0 ? "text-success" : "text-danger")} />
+            <p className="text-base text-muted-foreground font-medium">{cdiComparison}</p>
           </div>
         </div>
       </div>
 
       {/* Dividendos Card */}
-      <div className="glass-card p-6 border-2 border-primary/30 bg-primary/5 transition-all duration-300 hover:scale-105">
+      <div 
+        className="glass-card p-8 border-2 border-primary/40 bg-primary/5 transition-all duration-500 hover:scale-[1.03] hover:-translate-y-1 animate-slide-up"
+        style={{
+          boxShadow: '0 8px 32px hsl(207 90% 54% / 0.2)',
+          animationDelay: '0.2s'
+        }}
+      >
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-3">
-              <DollarSign className="w-6 h-6 text-primary" />
-              <p className="text-sm font-medium text-muted-foreground">Dividendos do Mês</p>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-primary" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground tracking-wide uppercase">Dividendos do Mês</p>
             </div>
-            <p className="text-4xl font-display font-semibold text-primary mb-2">
+            <p className="text-5xl font-display font-bold text-primary mb-3 tracking-tight">
               {formatCurrency(monthlyDividends)}
             </p>
-            <p className="text-sm text-muted-foreground">Recebidos este mês</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-            <DollarSign className="w-6 h-6 text-primary" />
+            <p className="text-base text-muted-foreground font-medium">Recebidos este mês</p>
           </div>
         </div>
       </div>
