@@ -1,48 +1,38 @@
 import { DominantSemaphore } from "@/components/DominantSemaphore";
 import { EssentialMetrics } from "@/components/EssentialMetrics";
 import { DistributionChart } from "@/components/DistributionChart";
+import { usePortfolioData } from "@/hooks/usePortfolioData";
 
 export default function Dashboard() {
-  // Mock data - in production this would come from API/state
-  const portfolioData = {
-    status: 'healthy' as const, // 'healthy' | 'attention' | 'urgent'
-    value: 250000,
-    targetAllocation: 50,
-    goalValue: 500000,
-  };
-
-  const metricsData = {
-    return1M: 2.5,
-    return12M: 15.2,
-    cdiComparison: 3.2,
-    monthlyDividends: 1250,
-  };
+  // Get real portfolio data
+  const portfolioData = usePortfolioData();
 
   const distributionData = [
-    { name: 'Ações', value: 50, color: 'hsl(207 90% 54%)' },
-    { name: 'FIIs', value: 30, color: 'hsl(142 91% 43%)' },
-    { name: 'RF', value: 20, color: 'hsl(45 80% 52%)' },
+    { name: 'Ações', value: portfolioData.allocation.stocks, color: 'hsl(207 90% 54%)' },
+    { name: 'FIIs', value: portfolioData.allocation.reits, color: 'hsl(142 91% 43%)' },
+    { name: 'RF', value: portfolioData.allocation.fixedIncome, color: 'hsl(45 80% 52%)' },
   ];
 
   return (
     <div className="flex flex-col h-full min-h-[calc(100vh-4rem)] animate-fade-in gap-6 py-6">
-      {/* Dominant Semaphore - 40% */}
-      <div className="flex-[0.4] flex items-center justify-center">
+      {/* Dominant Semaphore - 40% (with increased top margin) */}
+      <div className="flex-[0.4] flex items-center justify-center mt-12 md:mt-16">
         <DominantSemaphore
           status={portfolioData.status}
-          value={portfolioData.value}
-          targetAllocation={portfolioData.targetAllocation}
+          value={portfolioData.totalValue}
+          targetAllocation={portfolioData.goalProgress}
           goalValue={portfolioData.goalValue}
         />
       </div>
 
-      {/* Essential Metrics - 30% */}
+      {/* Essential Metrics - 30% (4 cards) */}
       <div className="flex-[0.3] flex items-center justify-center px-4">
         <EssentialMetrics
-          return1M={metricsData.return1M}
-          return12M={metricsData.return12M}
-          cdiComparison={metricsData.cdiComparison}
-          monthlyDividends={metricsData.monthlyDividends}
+          return1M={portfolioData.performance.oneMonth}
+          return12M={portfolioData.performance.twelveMonth}
+          cdiComparison={portfolioData.performance.cdiComparison}
+          monthlyDividends={portfolioData.dividends.currentMonth}
+          stocksAllocation={portfolioData.allocation.stocks}
         />
       </div>
 
