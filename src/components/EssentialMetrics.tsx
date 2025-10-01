@@ -29,7 +29,7 @@ export function EssentialMetrics({ return1M, return12M, cdiComparison, monthlyDi
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-7xl mx-auto">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-7 w-full max-w-7xl mx-auto">
       {/* Rentabilidade Card - Compact Side-by-Side Layout */}
       <div
         className="glass-card p-5 border border-success/30 transition-all duration-500 hover:scale-[1.02] hover:-translate-y-1 animate-slide-up rounded-3xl"

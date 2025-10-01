@@ -18,8 +18,8 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Essential Metrics - 60% (4 cards with 15% more spacing) */}
-      <div className="flex-[0.6] flex items-center justify-center px-4 mt-12 md:mt-16">
+      {/* Essential Metrics - 60% (4 cards with adjusted spacing) */}
+      <div className="flex-[0.6] flex items-center justify-center px-4 mt-6 md:mt-8">
         <EssentialMetrics
           return1M={portfolioData.performance.oneMonth}
           return12M={portfolioData.performance.twelveMonth}
