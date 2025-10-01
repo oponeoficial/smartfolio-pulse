@@ -44,40 +44,43 @@ export function Layout({ children }: LayoutProps) {
           isCollapsed ? "w-16" : "w-64"
         )}
       >
-        {/* Header with Toggle */}
+        {/* Header with Logo and Toggle */}
         <div className="p-4 border-b border-gold/20 flex items-center justify-between">
-          {!isCollapsed && (
-            <div className="flex items-center gap-3">
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-blue-gold flex items-center justify-center shadow-gold">
+                  <TrendingUp className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="font-display text-xl font-bold gradient-gold">TradeAI</h1>
+                  <p className="text-xs text-gold-light">Premium AI Trading</p>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="hover:bg-gold/10"
+              >
+                <ChevronLeft className="w-5 h-5 text-gold" />
+              </Button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center gap-2 w-full">
               <div className="w-10 h-10 rounded-xl bg-gradient-blue-gold flex items-center justify-center shadow-gold">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h1 className="font-display text-xl font-bold gradient-gold">TradeAI</h1>
-                <p className="text-xs text-gold-light">Premium AI Trading</p>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleSidebar}
+                className="hover:bg-gold/10"
+              >
+                <Menu className="w-5 h-5 text-gold" />
+              </Button>
             </div>
           )}
-          {isCollapsed && (
-            <div className="w-10 h-10 mx-auto rounded-xl bg-gradient-blue-gold flex items-center justify-center shadow-gold">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-          )}
-        </div>
-
-        {/* Toggle Button */}
-        <div className={cn("px-4 py-2", isCollapsed ? "flex justify-center" : "flex justify-end")}>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className="hover:bg-gold/10"
-          >
-            {isCollapsed ? (
-              <Menu className="w-5 h-5 text-gold" />
-            ) : (
-              <ChevronLeft className="w-5 h-5 text-gold" />
-            )}
-          </Button>
         </div>
 
         {/* Navigation */}
