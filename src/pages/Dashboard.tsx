@@ -1,20 +1,13 @@
 import { DominantSemaphore } from "@/components/DominantSemaphore";
 import { EssentialMetrics } from "@/components/EssentialMetrics";
-import { DistributionChart } from "@/components/DistributionChart";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
 
 export default function Dashboard() {
   // Get real portfolio data
   const portfolioData = usePortfolioData();
 
-  const distributionData = [
-    { name: 'Ações', value: portfolioData.allocation.stocks, color: 'hsl(207 90% 54%)' },
-    { name: 'FIIs', value: portfolioData.allocation.reits, color: 'hsl(142 91% 43%)' },
-    { name: 'RF', value: portfolioData.allocation.fixedIncome, color: 'hsl(45 80% 52%)' },
-  ];
-
   return (
-    <div className="flex flex-col h-full min-h-[calc(100vh-4rem)] animate-fade-in gap-6 py-6">
+    <div className="flex flex-col h-full min-h-[calc(100vh-4rem)] animate-fade-in py-6">
       {/* Dominant Semaphore - 40% (with increased top margin) */}
       <div className="flex-[0.4] flex items-center justify-center mt-12 md:mt-16">
         <DominantSemaphore
@@ -25,20 +18,17 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Essential Metrics - 30% (4 cards) */}
-      <div className="flex-[0.3] flex items-center justify-center px-4">
+      {/* Essential Metrics - 60% (4 cards with 15% more spacing) */}
+      <div className="flex-[0.6] flex items-center justify-center px-4 mt-12 md:mt-16">
         <EssentialMetrics
           return1M={portfolioData.performance.oneMonth}
           return12M={portfolioData.performance.twelveMonth}
           cdiComparison={portfolioData.performance.cdiComparison}
           monthlyDividends={portfolioData.dividends.currentMonth}
           stocksAllocation={portfolioData.allocation.stocks}
+          reitsAllocation={portfolioData.allocation.reits}
+          fixedIncomeAllocation={portfolioData.allocation.fixedIncome}
         />
-      </div>
-
-      {/* Distribution Chart - 30% */}
-      <div className="flex-[0.3] flex items-center justify-center pb-8">
-        <DistributionChart data={distributionData} />
       </div>
     </div>
   );
