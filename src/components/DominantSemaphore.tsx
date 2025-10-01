@@ -64,15 +64,15 @@ export function DominantSemaphore({ status, value, targetAllocation, goalValue }
         <button
           onClick={() => setIsModalOpen(true)}
           className={cn(
-            "relative flex flex-col items-center justify-center rounded-full transition-all duration-700 cursor-pointer hover:scale-105",
+            "relative flex flex-col items-center justify-center rounded-full transition-all duration-700 cursor-pointer hover:scale-[1.03] active:scale-[0.98]",
             "w-[200px] h-[200px] md:w-[280px] md:h-[280px]",
             currentConfig.bgColor,
             currentConfig.borderColor,
-            "border-[6px]",
+            "border-[5px]",
             currentConfig.animation
           )}
           style={{
-            boxShadow: `0 8px 64px ${currentConfig.shadowColor}, 0 0 80px ${currentConfig.shadowColor}`,
+            boxShadow: `0 8px 48px ${currentConfig.shadowColor}, 0 4px 24px ${currentConfig.shadowColor}, 0 0 60px ${currentConfig.shadowColor}`,
           }}
         >
           {/* Progress Ring */}
@@ -92,14 +92,14 @@ export function DominantSemaphore({ status, value, targetAllocation, goalValue }
 
           {/* Content */}
           <div className="z-10 flex flex-col items-center animate-slide-up">
-            <Icon className="w-10 h-10 md:w-14 md:h-14 mb-4 animate-float" style={{ color: currentConfig.color }} />
-            <p className="text-3xl md:text-[2.5rem] font-display font-bold text-foreground mb-2 tracking-tight">
+            <Icon className="w-10 h-10 md:w-14 md:h-14 mb-4 animate-float transition-transform duration-300" style={{ color: currentConfig.color }} />
+            <p className="text-3xl md:text-[2.5rem] font-display font-bold text-foreground mb-2 tracking-tight transition-all duration-300">
               {formatCurrency(value)}
             </p>
-            <p className="text-base md:text-[1.1rem] font-semibold tracking-wide" style={{ color: currentConfig.color }}>
+            <p className="text-base md:text-[1.1rem] font-semibold tracking-wide transition-all duration-300" style={{ color: currentConfig.color }}>
               {currentConfig.message}
             </p>
-            <p className="text-xs md:text-sm text-muted-foreground mt-2">
+            <p className="text-xs md:text-sm text-muted-foreground mt-2 font-light tracking-wide transition-all duration-300">
               Meta: {formatCurrency(goalValue)}
             </p>
           </div>

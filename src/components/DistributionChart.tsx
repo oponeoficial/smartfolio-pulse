@@ -59,7 +59,10 @@ export function DistributionChart({ data }: DistributionChartProps) {
       <div className="flex flex-col items-center gap-6 animate-fade-in">
         <button
           onClick={() => setIsModalOpen(true)}
-          className="relative transition-all duration-500 hover:scale-105 cursor-pointer"
+          className="relative transition-all duration-500 hover:scale-[1.03] active:scale-[0.98] cursor-pointer rounded-full"
+          style={{
+            filter: 'drop-shadow(0 4px 20px hsl(214 50% 22% / 0.3))',
+          }}
         >
           <svg
             width="200"
@@ -102,9 +105,9 @@ export function DistributionChart({ data }: DistributionChartProps) {
 
           {/* Center text */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground font-light">Total</p>
-              <p className="text-xl font-display font-bold text-foreground">100%</p>
+            <div className="text-center transition-all duration-300">
+              <p className="text-sm text-muted-foreground font-light tracking-wide">Total</p>
+              <p className="text-xl font-display font-bold text-foreground tracking-tight">100%</p>
             </div>
           </div>
         </button>
@@ -114,17 +117,20 @@ export function DistributionChart({ data }: DistributionChartProps) {
           {data.map((item, index) => (
             <div
               key={index}
-              className="flex items-center gap-2 glass-card px-4 py-2 transition-all duration-300 hover:scale-105"
+              className="flex items-center gap-2 glass-card px-5 py-3 transition-all duration-300 hover:scale-[1.05] hover:-translate-y-1 rounded-2xl cursor-pointer active:scale-95"
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
               style={{
                 opacity: hoveredIndex === null || hoveredIndex === index ? 1 : 0.5,
+                boxShadow: hoveredIndex === index ? `0 4px 20px ${item.color}40` : '0 2px 8px hsl(214 50% 22% / 0.2)',
               }}
             >
-              <span className="text-lg">{icons[item.name as keyof typeof icons]}</span>
-              <span className="text-sm font-medium text-foreground">{item.name}</span>
+              <span className="text-lg transition-transform duration-300" style={{ transform: hoveredIndex === index ? 'scale(1.2)' : 'scale(1)' }}>
+                {icons[item.name as keyof typeof icons]}
+              </span>
+              <span className="text-sm font-medium text-foreground tracking-wide">{item.name}</span>
               <span
-                className="text-sm font-bold"
+                className="text-sm font-bold tracking-tight"
                 style={{ color: item.color }}
               >
                 {item.value}%
