@@ -64,7 +64,7 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
           onClick={() => setIsModalOpen(true)}
           className={cn(
             "relative flex flex-col items-center justify-center rounded-full transition-all duration-700 cursor-pointer hover:scale-105",
-            "w-[280px] h-[280px] md:w-[400px] md:h-[400px]",
+            "w-[350px] h-[350px] md:w-[500px] md:h-[500px]",
             currentConfig.bgColor,
             currentConfig.borderColor,
             "border-[6px]",
