@@ -91,7 +91,7 @@ export function GiantSemaphore({ status, value, targetAllocation }: GiantSemapho
 
           {/* Content */}
           <div className="z-10 flex flex-col items-center animate-slide-up">
-            <Icon className="w-14 h-14 md:w-20 md:h-20 mb-6 animate-float" style={{ color: currentConfig.color }} />
+            <Icon className="w-18 h-18 md:w-20 md:h-20 mb-6 animate-float" style={{ color: currentConfig.color }} />
             <p className="text-4xl md:text-6xl font-display font-bold text-foreground mb-3 tracking-tight">
               {formatCurrency(value)}
             </p>
