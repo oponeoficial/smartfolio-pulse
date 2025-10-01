@@ -168,35 +168,11 @@ export default function Portfolio() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="font-display text-4xl font-bold mb-2">
-              Minha <span className="gradient-gold">Carteira</span>
-            </h1>
-            <p className="text-muted-foreground">Gerencie seus investimentos e acompanhe performance</p>
-          </div>
-          <Select value={selectedPortfolio} onValueChange={(value) => {
-            if (value === "new") {
-              setIsCreateDialogOpen(true);
-            } else {
-              setSelectedPortfolio(value);
-            }
-          }}>
-            <SelectTrigger className="w-[200px] glass-card border-gold/30">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {portfolios.map((portfolio) => (
-                <SelectItem key={portfolio.id} value={portfolio.id}>
-                  {portfolio.name}
-                </SelectItem>
-              ))}
-              <SelectItem value="new" className="text-gold font-semibold border-t border-border/50 mt-1 pt-2">
-                <Plus className="w-4 h-4 mr-2 inline" />
-                Nova Carteira...
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div>
+          <h1 className="font-display text-4xl font-bold mb-2">
+            Minha <span className="gradient-gold">Carteira</span>
+          </h1>
+          <p className="text-muted-foreground">Gerencie seus investimentos e acompanhe performance</p>
         </div>
         <div className="flex gap-3">
           <Dialog open={isStrategyDialogOpen} onOpenChange={setIsStrategyDialogOpen}>
@@ -241,6 +217,29 @@ export default function Portfolio() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Select value={selectedPortfolio} onValueChange={(value) => {
+            if (value === "new") {
+              setIsCreateDialogOpen(true);
+            } else {
+              setSelectedPortfolio(value);
+            }
+          }}>
+            <SelectTrigger className="w-[200px] glass-card border-gold/30">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {portfolios.map((portfolio) => (
+                <SelectItem key={portfolio.id} value={portfolio.id}>
+                  {portfolio.name}
+                </SelectItem>
+              ))}
+              <SelectItem value="new" className="text-gold font-semibold border-t border-border/50 mt-1 pt-2">
+                <Plus className="w-4 h-4 mr-2 inline" />
+                Nova Carteira...
+              </SelectItem>
+            </SelectContent>
+          </Select>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogContent>
