@@ -65,7 +65,7 @@ export function DominantSemaphore({ status, value, targetAllocation, goalValue }
           onClick={() => setIsModalOpen(true)}
           className={cn(
             "relative flex flex-col items-center justify-center rounded-full transition-all duration-700 cursor-pointer hover:scale-[1.03] active:scale-[0.98]",
-            "w-[224px] h-[224px] md:w-[314px] md:h-[314px]",
+            "w-[269px] h-[269px] md:w-[377px] md:h-[377px]",
             currentConfig.bgColor,
             currentConfig.borderColor,
             "border-[5px]",
