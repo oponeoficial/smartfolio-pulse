@@ -194,24 +194,6 @@ export default function AITrading() {
       {/* KPIs Grid */}
       <KPIsGrid />
 
-      {/* Featured Analyses */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="font-display text-2xl font-bold mb-2">Análises em Destaque</h2>
-          <p className="text-sm text-muted-foreground">
-            Análise multi-fatores: técnica, fundamental e sentimento
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {featuredRecommendations.map((rec, index) => (
-            <div key={rec.symbol} className="animate-slide-up" style={{ animationDelay: `${index * 150}ms` }}>
-              <RecommendationCard {...rec} />
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* All Analyses */}
       <div className="space-y-6">
         <div>
