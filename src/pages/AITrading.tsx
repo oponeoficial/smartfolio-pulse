@@ -1,19 +1,17 @@
-import { useState } from "react";
-import { Bot, Sparkles, TrendingUp, BarChart3, Target, Brain, Clock, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
+import { Brain, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RecommendationCard } from "@/components/RecommendationCard";
+import { KPIsGrid } from "@/components/KPIsGrid";
+import { AIChatPopup } from "@/components/AIChatPopup";
 
 export default function AITrading() {
-  const navigate = useNavigate();
-  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([
-    { role: "assistant", content: "Olá! Sou seu assistente de trading com IA. Como posso ajudar você hoje?" },
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterConfidence, setFilterConfidence] = useState<string>("all");
 
-  const recommendations = [
+  const allRecommendations = [
     {
       symbol: "AAPL",
       name: "Apple Inc.",
@@ -65,238 +63,181 @@ export default function AITrading() {
       reason:
         "Consolidação após rally recente. RSI em 52 sugere lateralização. Aguardar confirmação de tendência antes de entrar/sair.",
     },
-  ];
-
-  const aiMetrics = [
-    { label: "Taxa de Acerto", value: "87%", icon: Target, color: "success" },
-    { label: "Sharpe Ratio", value: "1.8", icon: TrendingUp, color: "primary" },
-    { label: "Operações (30d)", value: "247", icon: BarChart3, color: "gold" },
-    { label: "Retorno Médio", value: "+3.2%", icon: Sparkles, color: "success" },
-  ];
-
-  const backtestResults = [
-    { strategy: "Momentum + IA", return: 18.5, sharpe: 1.9, maxDrawdown: -8.2, trades: 342 },
-    { strategy: "Mean Reversion", return: 12.3, sharpe: 1.4, maxDrawdown: -12.5, trades: 289 },
-    { strategy: "Trend Following", return: 15.8, sharpe: 1.6, maxDrawdown: -10.1, trades: 198 },
-  ];
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim()) return;
-
-    setChatMessages((prev) => [
-      ...prev,
-      { role: "user", content: inputMessage },
-      {
-        role: "assistant",
-        content:
-          "Analisando sua pergunta usando modelos de IA avançados. Baseado nos dados atuais do mercado, recomendo...",
+    {
+      symbol: "MSFT",
+      name: "Microsoft Corp.",
+      action: "buy" as const,
+      confidence: 83,
+      price: 415.30,
+      change: 1.8,
+      targetPrice: 450.00,
+      stopLoss: 400.00,
+      entryPrices: {
+        conservative: 412.00,
+        moderate: 415.00,
+        aggressive: 418.00,
       },
-    ]);
-    setInputMessage("");
-  };
+      reason: "Crescimento consistente em cloud computing. Azure expandindo participação de mercado.",
+    },
+    {
+      symbol: "GOOGL",
+      name: "Alphabet Inc.",
+      action: "sell" as const,
+      confidence: 76,
+      price: 142.50,
+      change: -2.1,
+      targetPrice: 130.00,
+      stopLoss: 148.00,
+      entryPrices: {
+        conservative: 143.00,
+        moderate: 142.50,
+        aggressive: 142.00,
+      },
+      reason: "Pressão regulatória aumentando. Momentum de baixa confirmado por volume.",
+    },
+    {
+      symbol: "AMZN",
+      name: "Amazon.com Inc.",
+      action: "hold" as const,
+      confidence: 68,
+      price: 178.20,
+      change: 0.5,
+      targetPrice: 190.00,
+      stopLoss: 170.00,
+      entryPrices: {
+        conservative: 177.00,
+        moderate: 178.00,
+        aggressive: 179.00,
+      },
+      reason: "Lateralização após earnings. Aguardar definição de tendência.",
+    },
+  ];
+
+  // Filter and search logic with debounce
+  const filteredRecommendations = useMemo(() => {
+    return allRecommendations.filter((rec) => {
+      const matchesSearch = 
+        rec.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rec.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesType = 
+        filterType === "all" || rec.action === filterType;
+      
+      const matchesConfidence = 
+        filterConfidence === "all" ||
+        (filterConfidence === "high" && rec.confidence >= 80) ||
+        (filterConfidence === "medium" && rec.confidence >= 60 && rec.confidence < 80) ||
+        (filterConfidence === "low" && rec.confidence < 60);
+      
+      return matchesSearch && matchesType && matchesConfidence;
+    });
+  }, [searchQuery, filterType, filterConfidence]);
+
+  const featuredRecommendations = allRecommendations.slice(0, 3);
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 animate-fade-in pb-24">
+      {/* Header with Search and Filters */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-display text-4xl font-bold mb-2">
+              Análises <span className="gradient-gold">Públicas da IA</span>
+            </h1>
+            <p className="text-muted-foreground">Análises inteligentes para suas decisões de trading</p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/20">
+            <Brain className="w-5 h-5 text-gold animate-pulse" />
+            <span className="font-semibold text-gold">IA Ativa</span>
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por ticker..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-secondary/50 border-gold/30"
+            />
+          </div>
+          <div className="flex gap-3">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-[140px] bg-secondary/50 border-gold/30">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="buy">Comprar</SelectItem>
+                <SelectItem value="sell">Vender</SelectItem>
+                <SelectItem value="hold">Hold</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterConfidence} onValueChange={setFilterConfidence}>
+              <SelectTrigger className="w-[140px] bg-secondary/50 border-gold/30">
+                <SelectValue placeholder="Confiança" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="high">Alta (80%+)</SelectItem>
+                <SelectItem value="medium">Média (60-80%)</SelectItem>
+                <SelectItem value="low">Baixa (&lt;60%)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* KPIs Grid */}
+      <KPIsGrid />
+
+      {/* Featured Analyses */}
+      <div className="space-y-6">
         <div>
-          <h1 className="font-display text-4xl font-bold mb-2">
-            Análises <span className="gradient-gold">Públicas da IA</span>
-          </h1>
-          <p className="text-muted-foreground">Análises inteligentes para suas decisões de trading</p>
+          <h2 className="font-display text-2xl font-bold mb-2">Análises em Destaque</h2>
+          <p className="text-sm text-muted-foreground">
+            Análise multi-fatores: técnica, fundamental e sentimento
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gold/10 border border-gold/20">
-          <Brain className="w-5 h-5 text-gold animate-pulse" />
-          <span className="font-semibold text-gold">IA Ativa</span>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {featuredRecommendations.map((rec, index) => (
+            <div key={rec.symbol} className="animate-slide-up" style={{ animationDelay: `${index * 150}ms` }}>
+              <RecommendationCard {...rec} />
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* AI Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {aiMetrics.map((metric, i) => (
-          <div
-            key={metric.label}
-            className="glass-card p-6 hover-glow"
-            style={{ animationDelay: `${i * 100}ms` }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-lg bg-${metric.color}/10 border border-${metric.color}/20`}>
-                <metric.icon className={`w-6 h-6 text-${metric.color}`} />
-              </div>
-              <Clock className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <p className="text-sm text-muted-foreground mb-1">{metric.label}</p>
-            <p className="text-3xl font-display font-bold">{metric.value}</p>
+      {/* All Analyses */}
+      <div className="space-y-6">
+        <div>
+          <h2 className="font-display text-2xl font-bold mb-2">Todas as Análises</h2>
+          <p className="text-sm text-muted-foreground">
+            {filteredRecommendations.length} análises encontradas
+          </p>
+        </div>
+
+        {filteredRecommendations.length === 0 ? (
+          <div className="glass-card p-12 text-center">
+            <p className="text-muted-foreground">Nenhuma análise encontrada com os filtros selecionados.</p>
           </div>
-        ))}
-      </div>
-
-      {/* Tabs System */}
-      <Tabs defaultValue="analyses" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 bg-secondary/50 p-1">
-          <TabsTrigger value="analyses" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold">
-            Principais Análises
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold">
-            Assistente IA
-          </TabsTrigger>
-          <TabsTrigger value="backtest" className="data-[state=active]:bg-gold/20 data-[state=active]:text-gold">
-            Backtesting
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Analyses Tab */}
-        <TabsContent value="analyses" className="space-y-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gold/10 border border-gold/20 animate-glow-pulse">
-                <Sparkles className="w-5 h-5 text-gold" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl font-bold">Principais Análises</h2>
-                <p className="text-sm text-muted-foreground">
-                  Análise multi-fatores: técnica, fundamental e sentimento
-                </p>
-              </div>
-            </div>
-            <Button 
-              onClick={() => navigate('/analyses-public')}
-              className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-white"
-            >
-              Ver todas as análises
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </div>
-
+        ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {recommendations.map((rec, index) => (
-              <div key={rec.symbol} className="animate-slide-up" style={{ animationDelay: `${index * 150}ms` }}>
+            {filteredRecommendations.map((rec, index) => (
+              <div key={rec.symbol} className="animate-fade-in" style={{ animationDelay: `${index * 50}ms` }}>
                 <RecommendationCard {...rec} />
               </div>
             ))}
           </div>
-        </TabsContent>
+        )}
+      </div>
 
-        {/* Chat Tab */}
-        <TabsContent value="chat">
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-gold/10 border border-gold/20">
-                <Bot className="w-5 h-5 text-gold" />
-              </div>
-              <div>
-                <h2 className="font-display text-xl font-bold">Assistente IA</h2>
-                <p className="text-sm text-muted-foreground">Pergunte qualquer coisa sobre trading</p>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-6 h-[400px] overflow-y-auto p-4 bg-secondary/30 rounded-lg">
-              {chatMessages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex gap-3 ${
-                    msg.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  {msg.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center flex-shrink-0">
-                      <Bot className="w-4 h-4 text-gold" />
-                    </div>
-                  )}
-                  <div
-                    className={`px-4 py-3 rounded-lg max-w-[70%] ${
-                      msg.role === "user"
-                        ? "bg-primary/20 border border-primary/30"
-                        : "bg-secondary/50 border border-gold/20"
-                    }`}
-                  >
-                    <p className="text-sm">{msg.content}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <Input
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                placeholder="Pergunte sobre análise técnica, estratégias, ou ações específicas..."
-                className="bg-secondary/50 border-gold/30"
-              />
-              <Button onClick={handleSendMessage} className="bg-gradient-gold text-background">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Enviar
-              </Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Backtest Tab */}
-        <TabsContent value="backtest">
-          <div className="glass-card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-lg bg-gold/10 border border-gold/20">
-                <BarChart3 className="w-5 h-5 text-gold" />
-              </div>
-              <div>
-                <h2 className="font-display text-xl font-bold">Resultados de Backtesting</h2>
-                <p className="text-sm text-muted-foreground">
-                  Performance de estratégias em dados históricos (2020-2024)
-                </p>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-secondary/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Estratégia</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Retorno Total</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Sharpe Ratio</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Max Drawdown</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Operações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {backtestResults.map((result, i) => (
-                    <tr key={i} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {i === 0 && (
-                            <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
-                          )}
-                          <span className="font-semibold">{result.strategy}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="font-semibold text-success">
-                          +{result.return.toFixed(1)}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right font-semibold">{result.sharpe}</td>
-                      <td className="px-6 py-4 text-right">
-                        <span className="text-danger">{result.maxDrawdown.toFixed(1)}%</span>
-                      </td>
-                      <td className="px-6 py-4 text-right text-muted-foreground">
-                        {result.trades}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="mt-6 p-4 bg-gold/10 border border-gold/20 rounded-lg">
-              <p className="text-sm">
-                <span className="font-semibold text-gold">💡 Insight:</span> A estratégia
-                "Momentum + IA" apresentou o melhor desempenho ajustado ao risco nos últimos 4
-                anos, com Sharpe Ratio de 1.9 e retorno de 18.5%.
-              </p>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+      {/* Floating AI Chat Popup */}
+      <AIChatPopup />
     </div>
   );
 }
