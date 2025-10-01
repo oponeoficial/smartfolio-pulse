@@ -1,4 +1,4 @@
-import { Wallet, Plus, TrendingUp, PieChart, Target, History } from "lucide-react";
+import { Plus, History, Target, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
@@ -20,6 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PortfolioKPIs } from "@/components/PortfolioKPIs";
+import { useRebalanceLogic } from "@/hooks/useRebalanceLogic";
 
 interface Portfolio {
   id: string;
@@ -36,6 +38,8 @@ interface Asset {
   avgPrice: number;
   currentPrice: number;
   allocation: number;
+  dividends: number;
+  type: 'stock' | 'reit' | 'fixedIncome' | 'crypto';
 }
 
 interface ClosedPosition {
@@ -62,10 +66,11 @@ export default function Portfolio() {
   const [selectedStrategy, setSelectedStrategy] = useState("OpOne AI");
 
   const assets: Asset[] = [
-    { symbol: "AAPL", name: "Apple Inc.", quantity: 50, avgPrice: 165.0, currentPrice: 178.45, allocation: 35 },
-    { symbol: "MSFT", name: "Microsoft", quantity: 30, avgPrice: 320.0, currentPrice: 335.12, allocation: 25 },
-    { symbol: "GOOGL", name: "Alphabet", quantity: 25, avgPrice: 125.0, currentPrice: 135.88, allocation: 20 },
-    { symbol: "AMZN", name: "Amazon", quantity: 15, avgPrice: 140.0, currentPrice: 148.22, allocation: 20 },
+    { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, type: 'stock' },
+    { symbol: "VALE3", name: "Vale ON", quantity: 100, avgPrice: 68.0, currentPrice: 72.15, allocation: 25, dividends: 420.00, type: 'stock' },
+    { symbol: "ITUB4", name: "Itaú Unibanco PN", quantity: 200, avgPrice: 28.5, currentPrice: 30.80, allocation: 20, dividends: 340.00, type: 'stock' },
+    { symbol: "HGLG11", name: "CSHG Logística FII", quantity: 80, avgPrice: 145.0, currentPrice: 152.30, allocation: 15, dividends: 680.00, type: 'reit' },
+    { symbol: "BBAS3", name: "Banco do Brasil ON", quantity: 120, avgPrice: 42.0, currentPrice: 45.60, allocation: 5, dividends: 195.00, type: 'stock' },
   ];
 
   const closedPositions: ClosedPosition[] = [
@@ -137,6 +142,23 @@ export default function Portfolio() {
   const winRate = (closedPositions.filter((pos) => pos.returnValue > 0).length / closedPositions.length) * 100;
   const maxProfit = Math.max(...closedPositions.map((pos) => pos.returnValue));
   const maxLoss = Math.min(...closedPositions.map((pos) => pos.returnValue));
+
+  // Calculate KPIs
+  const totalValue = assets.reduce((acc, asset) => acc + asset.quantity * asset.currentPrice, 0);
+  const investedValue = assets.reduce((acc, asset) => acc + asset.quantity * asset.avgPrice, 0);
+  const totalReturn = ((totalValue - investedValue) / investedValue) * 100;
+  const totalValueChange = 2.3; // Mock daily change
+  const diversificationScore = 72; // Mock diversification score
+  const cdiRate = 12.5;
+  const cdiComparison = (totalReturn / cdiRate) * 100;
+
+  // Get rebalance logic
+  const currentPortfolio = portfolios.find(p => p.id === selectedPortfolio);
+  const { rebalanceActions, rebalanceStatus } = useRebalanceLogic(
+    assets,
+    currentPortfolio?.strategy || 'OpOne AI',
+    5
+  );
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -260,6 +282,17 @@ export default function Portfolio() {
         </div>
       </div>
 
+      {/* KPIs Grid */}
+      <PortfolioKPIs
+        totalValue={totalValue}
+        totalValueChange={totalValueChange}
+        totalReturn={totalReturn}
+        diversificationScore={diversificationScore}
+        cdiComparison={cdiComparison}
+        rebalanceStatus={rebalanceStatus}
+        daysUntilRebalance={15}
+      />
+
       <Tabs defaultValue="positions" className="space-y-6">
         <TabsList className="glass-card">
           <TabsTrigger value="positions">Posições Abertas</TabsTrigger>
@@ -267,42 +300,6 @@ export default function Portfolio() {
         </TabsList>
 
         <TabsContent value="positions" className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-primary/10 border border-primary/20">
-                  <Wallet className="w-5 h-5 text-primary" />
-                </div>
-                <span className="text-sm text-muted-foreground">Valor Total</span>
-              </div>
-              <p className="text-3xl font-display font-bold">R$ 125.430</p>
-              <p className="text-sm text-success mt-1">+R$ 12.850 (11.4%)</p>
-            </div>
-
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-success/10 border border-success/20">
-                  <TrendingUp className="w-5 h-5 text-success" />
-                </div>
-                <span className="text-sm text-muted-foreground">Retorno Total</span>
-              </div>
-              <p className="text-3xl font-display font-bold text-success">+15.8%</p>
-              <p className="text-sm text-muted-foreground mt-1">Últimos 12 meses</p>
-            </div>
-
-            <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-warning/10 border border-warning/20">
-                  <PieChart className="w-5 h-5 text-warning" />
-                </div>
-                <span className="text-sm text-muted-foreground">Diversificação</span>
-              </div>
-              <p className="text-3xl font-display font-bold">{assets.length}</p>
-              <p className="text-sm text-muted-foreground mt-1">Ativos diferentes</p>
-            </div>
-          </div>
-
           {/* Assets Table */}
           <div className="glass-card overflow-hidden">
             <div className="p-6 border-b border-border/50">
@@ -317,13 +314,17 @@ export default function Portfolio() {
                     <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Preço Médio</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Preço Atual</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">P/L</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">Lucro/Prejuízo</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">Dividendos</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Alocação</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold">Situação</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/50">
-                  {assets.map((asset) => {
+                  {assets.map((asset, index) => {
                     const pl = calculatePL(asset.quantity, asset.avgPrice, asset.currentPrice);
+                    const rebalanceAction = rebalanceActions[index];
+                    
                     return (
                       <tr key={asset.symbol} className="hover:bg-secondary/30 transition-colors">
                         <td className="px-6 py-4">
@@ -338,14 +339,16 @@ export default function Portfolio() {
                         <td className="px-6 py-4 text-right">
                           <div className={pl.total >= 0 ? "text-success" : "text-danger"}>
                             <p className="font-semibold">
-                              R$ {pl.total >= 0 ? "+" : ""}
-                              {pl.total.toFixed(2)}
+                              {pl.total >= 0 ? '+' : ''}R$ {pl.total.toFixed(2)}
                             </p>
                             <p className="text-sm">
-                              ({pl.percent >= 0 ? "+" : ""}
-                              {pl.percent.toFixed(2)}%)
+                              ({pl.percent >= 0 ? '+' : ''}{pl.percent.toFixed(1)}%)
                             </p>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <p className="font-semibold">R$ {asset.dividends.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">este ano</p>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -356,6 +359,17 @@ export default function Portfolio() {
                               />
                             </div>
                             <span className="text-sm">{asset.allocation}%</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                            rebalanceAction.action === 'SELL' 
+                              ? 'bg-danger/10 text-danger border border-danger/20' 
+                              : rebalanceAction.action === 'BUY'
+                              ? 'bg-success/10 text-success border border-success/20'
+                              : 'bg-muted/50 text-muted-foreground border border-border/50'
+                          }`}>
+                            {rebalanceAction.message}
                           </div>
                         </td>
                       </tr>
