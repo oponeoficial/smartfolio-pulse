@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioKPIs } from "@/components/PortfolioKPIs";
 import { useRebalanceLogic } from "@/hooks/useRebalanceLogic";
+import { usePortfolioData } from "@/hooks/usePortfolioData";
 import { AddAssetModal } from "@/components/AddAssetModal";
 import { OrderHistory } from "@/components/OrderHistory";
 
@@ -59,15 +60,17 @@ interface ClosedPosition {
 
 export default function Portfolio() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([
-    { id: "1", name: "Principal", currency: "BRL", strategy: "OpOne AI", color: "gold" },
+    { id: "carteira-principal", name: "Principal", currency: "BRL", strategy: "OpOne AI", color: "gold" },
   ]);
-  const [selectedPortfolio, setSelectedPortfolio] = useState<string>("1");
+  const [selectedPortfolio, setSelectedPortfolio] = useState<string>("carteira-principal");
   const [newPortfolioName, setNewPortfolioName] = useState("");
   const [newPortfolioCurrency, setNewPortfolioCurrency] = useState("BRL");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isStrategyDialogOpen, setIsStrategyDialogOpen] = useState(false);
   const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
   const [selectedStrategy, setSelectedStrategy] = useState("OpOne AI");
+  
+  const portfolioData = usePortfolioData(selectedPortfolio);
 
   const assets: Asset[] = [
     { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, brokerage: 25.00, type: 'stock' },
@@ -130,13 +133,14 @@ export default function Portfolio() {
   const handleCreatePortfolio = () => {
     if (newPortfolioName.trim()) {
       const newPortfolio: Portfolio = {
-        id: Date.now().toString(),
+        id: `carteira-${Date.now()}`,
         name: newPortfolioName,
         currency: newPortfolioCurrency,
         strategy: "OpOne AI",
         color: "gold",
       };
       setPortfolios([...portfolios, newPortfolio]);
+      setSelectedPortfolio(newPortfolio.id);
       setNewPortfolioName("");
       setIsCreateDialogOpen(false);
     }
@@ -323,9 +327,25 @@ export default function Portfolio() {
           <div className="glass-card overflow-hidden">
             <div className="p-6 border-b border-border/50">
               <h2 className="font-display text-2xl font-bold">Posições Abertas</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ativos atualmente em carteira
+              </p>
             </div>
 
-            <div className="overflow-x-auto">
+            {assets.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4">
+                  <TrendingUp className="w-8 h-8 text-gold" />
+                </div>
+                <h3 className="font-display text-xl font-bold mb-2">Esta carteira está vazia</h3>
+                <p className="text-muted-foreground mb-6">Adicione seu primeiro ativo para começar a acompanhar seus investimentos</p>
+                <Button onClick={() => setIsAddAssetModalOpen(true)} className="bg-[#00C853] hover:bg-[#00B248]">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Ativo
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-secondary/50">
                   <tr>
@@ -333,12 +353,10 @@ export default function Portfolio() {
                     <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Preço Médio</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Preço Atual</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Total Investido</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Total Hoje</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Dividendos</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Sem Dividendos</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Com Dividendos</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Sem Div</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Com Div</th>
                     <th className="px-6 py-4 text-right text-sm font-semibold">Alocação</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold">Insight</th>
                   </tr>
@@ -365,8 +383,6 @@ export default function Portfolio() {
                         <td className="px-6 py-4 text-right">{asset.quantity}</td>
                         <td className="px-6 py-4 text-right">{currencySymbol} {asset.avgPrice.toFixed(2)}</td>
                         <td className="px-6 py-4 text-right font-semibold">{currencySymbol} {asset.currentPrice.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right">{currencySymbol} {totalInvested.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right font-semibold">{currencySymbol} {totalToday.toFixed(2)}</td>
                         <td className="px-6 py-4 text-right">
                           <p className="font-semibold">{currencySymbol} {asset.dividends.toFixed(2)}</p>
                           <p className="text-xs text-muted-foreground">este ano</p>
@@ -420,6 +436,7 @@ export default function Portfolio() {
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         </TabsContent>
 

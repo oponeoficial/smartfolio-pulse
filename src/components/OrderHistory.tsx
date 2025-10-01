@@ -83,7 +83,7 @@ export function OrderHistory({ currency }: OrderHistoryProps) {
               <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
               <th className="px-6 py-4 text-right text-sm font-semibold">Preço</th>
               <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
-              <th className="px-6 py-4 text-right text-sm font-semibold">Total</th>
+              <th className="px-6 py-4 text-right text-sm font-semibold">Total Investido</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border/50">
@@ -116,11 +116,8 @@ export function OrderHistory({ currency }: OrderHistoryProps) {
                 <td className="px-6 py-4 text-right">
                   {currencySymbol} {order.brokerage.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 text-right font-semibold">
-                  <span className={order.operation === "BUY" ? "text-danger" : "text-success"}>
-                    {order.operation === "BUY" ? "-" : "+"}
-                    {currencySymbol} {order.total.toFixed(2)}
-                  </span>
+                <td className="px-6 py-4 text-right font-semibold text-foreground">
+                  {currencySymbol} {order.total.toFixed(2)}
                 </td>
               </tr>
             ))}

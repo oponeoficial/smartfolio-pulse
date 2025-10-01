@@ -34,16 +34,27 @@ interface PortfolioData {
 }
 
 // Mock portfolio data - in production this would come from API/state management
-const mockAssets: Asset[] = [
-  { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, type: 'stock' },
-  { symbol: "VALE3", name: "Vale ON", quantity: 100, avgPrice: 68.0, currentPrice: 72.15, allocation: 25, dividends: 420.00, type: 'stock' },
-  { symbol: "ITUB4", name: "Itaú Unibanco PN", quantity: 200, avgPrice: 28.5, currentPrice: 30.80, allocation: 20, dividends: 340.00, type: 'stock' },
-  { symbol: "HGLG11", name: "CSHG Logística FII", quantity: 80, avgPrice: 145.0, currentPrice: 152.30, allocation: 15, dividends: 680.00, type: 'reit' },
-  { symbol: "BBAS3", name: "Banco do Brasil ON", quantity: 120, avgPrice: 42.0, currentPrice: 45.60, allocation: 5, dividends: 195.00, type: 'stock' },
-];
+const mockAssetsData: Record<string, Asset[]> = {
+  'carteira-principal': [
+    { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, type: 'stock' },
+    { symbol: "VALE3", name: "Vale ON", quantity: 100, avgPrice: 68.0, currentPrice: 72.15, allocation: 25, dividends: 420.00, type: 'stock' },
+    { symbol: "ITUB4", name: "Itaú Unibanco PN", quantity: 200, avgPrice: 28.5, currentPrice: 30.80, allocation: 20, dividends: 340.00, type: 'stock' },
+    { symbol: "HGLG11", name: "CSHG Logística FII", quantity: 80, avgPrice: 145.0, currentPrice: 152.30, allocation: 15, dividends: 680.00, type: 'reit' },
+    { symbol: "BBAS3", name: "Banco do Brasil ON", quantity: 120, avgPrice: 42.0, currentPrice: 45.60, allocation: 5, dividends: 195.00, type: 'stock' },
+  ],
+  'carteira-growth': [
+    { symbol: "MGLU3", name: "Magazine Luiza ON", quantity: 300, avgPrice: 2.5, currentPrice: 3.2, allocation: 40, dividends: 0, type: 'stock' },
+    { symbol: "PETZ3", name: "Petz ON", quantity: 200, avgPrice: 5.0, currentPrice: 6.5, allocation: 35, dividends: 50.00, type: 'stock' },
+    { symbol: "VIIA3", name: "Via Varejo ON", quantity: 400, avgPrice: 1.8, currentPrice: 2.1, allocation: 25, dividends: 0, type: 'stock' },
+  ],
+  // Outras carteiras começam vazias
+};
 
-export function usePortfolioData(): PortfolioData {
+export function usePortfolioData(portfolioId: string = 'carteira-principal'): PortfolioData {
   const portfolioData = useMemo(() => {
+    // Get assets for the selected portfolio (empty array if not found)
+    const mockAssets = mockAssetsData[portfolioId] || [];
+    
     // Calculate total values
     const totalValue = mockAssets.reduce((acc, asset) => acc + asset.quantity * asset.currentPrice, 0);
     const investedValue = mockAssets.reduce((acc, asset) => acc + asset.quantity * asset.avgPrice, 0);
@@ -102,7 +113,7 @@ export function usePortfolioData(): PortfolioData {
       goalValue,
       goalProgress,
     };
-  }, []);
+  }, [portfolioId]);
 
   return portfolioData;
 }
