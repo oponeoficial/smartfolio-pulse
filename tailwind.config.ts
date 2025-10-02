@@ -37,12 +37,6 @@ export default {
           light: "hsl(var(--gold-light))",
           dark: "hsl(var(--gold-dark))",
         },
-        epic: {
-          green: "hsl(var(--epic-green))",
-          blue: "hsl(var(--trust-blue))",
-          gold: "hsl(var(--conquest-gold))",
-          red: "hsl(var(--alert-red))",
-        },
         success: {
           DEFAULT: "hsl(var(--success))",
           light: "hsl(var(--success-light))",
@@ -124,23 +118,6 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        "pulse-icon": {
-          "0%, 100%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.05)" },
-        },
-        "float": {
-          "0%, 100%": { transform: "translateY(0px)" },
-          "50%": { transform: "translateY(-10px)" },
-        },
-        "coin-fall": {
-          "0%": { transform: "translateY(-20px) rotate(0deg)", opacity: "0" },
-          "50%": { opacity: "1" },
-          "100%": { transform: "translateY(20px) rotate(360deg)", opacity: "0" },
-        },
-        "progress-fill": {
-          "0%": { strokeDashoffset: "1000" },
-          "100%": { strokeDashoffset: "0" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -149,10 +126,6 @@ export default {
         "slide-up": "slide-up 0.6s ease-out",
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "shimmer": "shimmer 2s linear infinite",
-        "pulse-icon": "pulse-icon 2s ease-in-out infinite",
-        "float": "float 3s ease-in-out infinite",
-        "coin-fall": "coin-fall 2s ease-in-out infinite",
-        "progress-fill": "progress-fill 2s ease-out forwards",
       },
     },
   },
