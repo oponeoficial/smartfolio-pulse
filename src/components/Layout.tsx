@@ -1,23 +1,21 @@
-import { ReactNode, useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Wallet, Radar, TrendingUp, Menu, ChevronLeft } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { LayoutDashboard, Wallet, Radar, TrendingUp, Menu, ChevronLeft, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-interface LayoutProps {
-  children: ReactNode;
-}
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: TrendingUp, label: "Mercado", path: "/market" },
   { icon: Radar, label: "Radar de Oportunidades", path: "/ai" },
   { icon: Wallet, label: "Carteira", path: "/portfolio" },
-  { icon: BookOpen, label: "Educação", path: "/education" },
 ];
 
-export function Layout({ children }: LayoutProps) {
+export function Layout() {
+  const navigate = useNavigate();
   const location = useLocation();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -34,6 +32,14 @@ export function Layout({ children }: LayoutProps) {
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
   };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  // Mock user data - substituir por dados reais
+  const user = JSON.parse(localStorage.getItem("user") || '{"name":"Investidor","email":"investidor@email.com","avatar":""}');
 
   return (
     <div className="min-h-screen flex w-full bg-background">
@@ -123,14 +129,55 @@ export function Layout({ children }: LayoutProps) {
           </nav>
         </TooltipProvider>
 
-        {/* Footer */}
-        {!isCollapsed && (
-          <div className="p-4 border-t border-gold/20">
-            <div className="glass-card p-3 text-xs text-center border-gold/30">
-              <p className="text-gold-light">v1.0.0 - Premium</p>
-            </div>
-          </div>
-        )}
+        {/* Footer - User Profile */}
+        <div className="p-4 border-t border-gold/20">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                className={cn(
+                  "w-full hover:bg-gold/10 transition-all",
+                  isCollapsed ? "p-2" : "p-3"
+                )}
+              >
+                <div className={cn(
+                  "flex items-center gap-3",
+                  isCollapsed && "justify-center"
+                )}>
+                  <Avatar className="w-8 h-8 border-2 border-gold/30">
+                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarFallback className="bg-gradient-blue-gold text-white text-xs">
+                      {user.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!isCollapsed && (
+                    <div className="flex-1 text-left">
+                      <p className="text-sm font-medium text-foreground">{user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                  )}
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 glass-card border-gold/20">
+              <DropdownMenuLabel>
+                <div>
+                  <p className="font-medium">{user.name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-gold/20" />
+              <DropdownMenuItem onClick={() => navigate("/settings")} className="cursor-pointer hover:bg-gold/10">
+                <SettingsIcon className="w-4 h-4 mr-2" />
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-red/10 text-red">
+                <LogOut className="w-4 h-4 mr-2" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </aside>
 
       {/* Main Content */}
@@ -140,7 +187,7 @@ export function Layout({ children }: LayoutProps) {
           isCollapsed ? "ml-16" : "ml-64"
         )}
       >
-        {children}
+        <Outlet />
       </main>
     </div>
   );
