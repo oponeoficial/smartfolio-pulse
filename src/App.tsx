@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Market from "./pages/Market";
-import AITrading from "./pages/AITrading";
+import OpportunityRadar from "./pages/OpportunityRadar";
 import Education from "./pages/Education";
 import Portfolio from "./pages/Portfolio";
 import AnalysesPublic from "./pages/AnalysesPublic";
@@ -24,7 +24,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/market" element={<Market />} />
-            <Route path="/ai" element={<AITrading />} />
+            <Route path="/ai" element={<OpportunityRadar />} />
             <Route path="/analyses-public" element={<AnalysesPublic />} />
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/education" element={<Education />} />

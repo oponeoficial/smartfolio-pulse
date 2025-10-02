@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Wallet, Bot, TrendingUp, Menu, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, BookOpen, Wallet, Radar, TrendingUp, Menu, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -12,7 +12,7 @@ interface LayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
   { icon: TrendingUp, label: "Mercado", path: "/market" },
-  { icon: Bot, label: "IA Trading", path: "/ai" },
+  { icon: Radar, label: "Radar de Oportunidades", path: "/ai" },
   { icon: Wallet, label: "Carteira", path: "/portfolio" },
   { icon: BookOpen, label: "Educação", path: "/education" },
 ];
