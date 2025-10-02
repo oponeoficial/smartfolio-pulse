@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { LayoutDashboard, Wallet, Radar, TrendingUp, Menu, ChevronLeft, LogOut, Settings as SettingsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
@@ -90,44 +90,42 @@ export function Layout() {
         </div>
 
         {/* Navigation */}
-        <TooltipProvider delayDuration={0}>
-          <nav className="flex-1 p-2 space-y-2">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              const navButton = (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center rounded-lg transition-all group",
-                    isCollapsed ? "justify-center p-3" : "gap-3 px-4 py-3",
-                    isActive
-                      ? "bg-gold/10 text-gold border border-gold/30 shadow-gold"
-                      : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <item.icon className={cn("w-5 h-5", isActive && "text-gold")} />
-                  {!isCollapsed && <span className="font-medium">{item.label}</span>}
-                </Link>
+        <nav className="flex-1 p-2 space-y-2">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            const navButton = (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  "flex items-center rounded-lg transition-all group",
+                  isCollapsed ? "justify-center p-3" : "gap-3 px-4 py-3",
+                  isActive
+                    ? "bg-gold/10 text-gold border border-gold/30 shadow-gold"
+                    : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", isActive && "text-gold")} />
+                {!isCollapsed && <span className="font-medium">{item.label}</span>}
+              </Link>
+            );
+
+            if (isCollapsed) {
+              return (
+                <Tooltip key={item.path}>
+                  <TooltipTrigger asChild>
+                    {navButton}
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="glass-card">
+                    <p>{item.label}</p>
+                  </TooltipContent>
+                </Tooltip>
               );
+            }
 
-              if (isCollapsed) {
-                return (
-                  <Tooltip key={item.path}>
-                    <TooltipTrigger asChild>
-                      {navButton}
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="glass-card">
-                      <p>{item.label}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return navButton;
-            })}
-          </nav>
-        </TooltipProvider>
+            return navButton;
+          })}
+        </nav>
 
         {/* Footer - User Profile */}
         <div className="p-4 border-t border-gold/20">
