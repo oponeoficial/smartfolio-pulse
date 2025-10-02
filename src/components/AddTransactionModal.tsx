@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Calendar } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -24,10 +26,11 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface AddAssetModalProps {
+interface AddTransactionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currency: string;
+  portfolioId: string;
 }
 
 const availableAssets = [
@@ -41,7 +44,8 @@ const availableAssets = [
   { symbol: "MSFT34", name: "Microsoft BDR" },
 ];
 
-export function AddAssetModal({ open, onOpenChange, currency }: AddAssetModalProps) {
+export function AddTransactionModal({ open, onOpenChange, currency, portfolioId }: AddTransactionModalProps) {
+  const queryClient = useQueryClient();
   const [date, setDate] = useState<Date>(new Date());
   const [asset, setAsset] = useState<string>("");
   const [operation, setOperation] = useState<"BUY" | "SELL">("BUY");
@@ -80,20 +84,42 @@ export function AddAssetModal({ open, onOpenChange, currency }: AddAssetModalPro
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validate()) {
-      // TODO: Implement save logic
-      console.log("Salvando operação:", {
-        date,
-        asset,
-        operation,
-        quantity: parseFloat(quantity),
-        price: parseFloat(price),
-        brokerage: parseFloat(brokerage),
-        total,
-      });
-      onOpenChange(false);
-      resetForm();
+      try {
+        // TODO: Replace with actual API call when backend is ready
+        const transactionData = {
+          portfolioId,
+          date,
+          asset,
+          operation,
+          quantity: parseFloat(quantity),
+          price: parseFloat(price),
+          brokerage: parseFloat(brokerage),
+          total,
+        };
+        
+        console.log("Salvando transação:", transactionData);
+        
+        // Invalidate all portfolio-related queries to trigger refetch
+        await queryClient.invalidateQueries({ queryKey: ['portfolio-orders', portfolioId] });
+        await queryClient.invalidateQueries({ queryKey: ['portfolio-positions', portfolioId] });
+        await queryClient.invalidateQueries({ queryKey: ['portfolio-kpis', portfolioId] });
+        
+        toast({
+          title: "Transação adicionada",
+          description: "A transação foi registrada com sucesso!",
+        });
+        
+        onOpenChange(false);
+        resetForm();
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao adicionar transação. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -117,9 +143,9 @@ export function AddAssetModal({ open, onOpenChange, currency }: AddAssetModalPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-2xl gradient-gold">Adicionar Ativo</DialogTitle>
+          <DialogTitle className="text-2xl gradient-gold">Adicionar Transação</DialogTitle>
           <DialogDescription>
-            Registre uma nova operação na sua carteira
+            Registre uma nova transação na sua carteira
           </DialogDescription>
         </DialogHeader>
 
@@ -260,7 +286,7 @@ export function AddAssetModal({ open, onOpenChange, currency }: AddAssetModalPro
             Cancelar
           </Button>
           <Button onClick={handleSubmit} className="bg-[#00C853] hover:bg-[#00B248]">
-            Adicionar Operação
+            Adicionar Transação
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioKPIs } from "@/components/PortfolioKPIs";
 import { useRebalanceLogic } from "@/hooks/useRebalanceLogic";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
-import { AddAssetModal } from "@/components/AddAssetModal";
+import { AddTransactionModal } from "@/components/AddTransactionModal";
 import { OrderHistory } from "@/components/OrderHistory";
 
 interface Portfolio {
@@ -66,9 +66,7 @@ export default function Portfolio() {
   const [newPortfolioName, setNewPortfolioName] = useState("");
   const [newPortfolioCurrency, setNewPortfolioCurrency] = useState("BRL");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isStrategyDialogOpen, setIsStrategyDialogOpen] = useState(false);
-  const [isAddAssetModalOpen, setIsAddAssetModalOpen] = useState(false);
-  const [selectedStrategy, setSelectedStrategy] = useState("OpOne AI");
+  const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
   
   const portfolioData = usePortfolioData(selectedPortfolio);
 
@@ -114,14 +112,6 @@ export default function Portfolio() {
       returnValue: -148.0,
       returnPercent: -3.9,
     },
-  ];
-
-  const strategies = [
-    { id: "opone", name: "Recomendação OpOne AI", description: "Automática com IA" },
-    { id: "custom", name: "Minha Estratégia Personalizada", description: "Customizável" },
-    { id: "buyhold", name: "Buy & Hold", description: "Longo prazo" },
-    { id: "daytrade", name: "Day Trading", description: "Operações intraday" },
-    { id: "swing", name: "Swing Trading", description: "Médio prazo" },
   ];
 
   const calculatePL = (qty: number, avg: number, current: number) => {
@@ -179,49 +169,6 @@ export default function Portfolio() {
           <p className="text-muted-foreground">Gerencie seus investimentos e acompanhe performance</p>
         </div>
         <div className="flex gap-3">
-          <Dialog open={isStrategyDialogOpen} onOpenChange={setIsStrategyDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="glass" size="lg">
-                <Target className="w-5 h-5 mr-2" />
-                Minhas Estratégias
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-2xl gradient-gold">Estratégias de Investimento</DialogTitle>
-                <DialogDescription>
-                  Escolha ou personalize sua estratégia para esta carteira
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                {strategies.map((strategy) => (
-                  <div
-                    key={strategy.id}
-                    className={`glass-card p-4 cursor-pointer transition-all hover:border-gold/50 ${
-                      selectedStrategy === strategy.name ? "border-gold border-2" : ""
-                    }`}
-                    onClick={() => setSelectedStrategy(strategy.name)}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">{strategy.name}</h3>
-                        <p className="text-sm text-muted-foreground">{strategy.description}</p>
-                      </div>
-                      {selectedStrategy === strategy.name && (
-                        <div className="w-6 h-6 rounded-full bg-gold/20 border-2 border-gold flex items-center justify-center">
-                          <div className="w-2 h-2 rounded-full bg-gold" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <DialogFooter>
-                <Button onClick={() => setIsStrategyDialogOpen(false)}>Aplicar Estratégia</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
           <Select value={selectedPortfolio} onValueChange={(value) => {
             if (value === "new") {
               setIsCreateDialogOpen(true);
@@ -289,19 +236,20 @@ export default function Portfolio() {
           <Button 
             variant="default" 
             size="lg"
-            onClick={() => setIsAddAssetModalOpen(true)}
+            onClick={() => setIsAddTransactionModalOpen(true)}
             className="bg-[#00C853] hover:bg-[#00B248]"
           >
             <Plus className="w-5 h-5 mr-2" />
-            Adicionar Ativo
+            Adicionar Transação
           </Button>
         </div>
       </div>
 
-      <AddAssetModal 
-        open={isAddAssetModalOpen} 
-        onOpenChange={setIsAddAssetModalOpen}
+      <AddTransactionModal 
+        open={isAddTransactionModalOpen} 
+        onOpenChange={setIsAddTransactionModalOpen}
         currency={currentPortfolio?.currency || "BRL"}
+        portfolioId={selectedPortfolio}
       />
 
       {/* KPIs Grid */}
@@ -338,10 +286,10 @@ export default function Portfolio() {
                   <TrendingUp className="w-8 h-8 text-gold" />
                 </div>
                 <h3 className="font-display text-xl font-bold mb-2">Esta carteira está vazia</h3>
-                <p className="text-muted-foreground mb-6">Adicione seu primeiro ativo para começar a acompanhar seus investimentos</p>
-                <Button onClick={() => setIsAddAssetModalOpen(true)} className="bg-[#00C853] hover:bg-[#00B248]">
+                <p className="text-muted-foreground mb-6">Adicione sua primeira transação para começar a acompanhar seus investimentos</p>
+                <Button onClick={() => setIsAddTransactionModalOpen(true)} className="bg-[#00C853] hover:bg-[#00B248]">
                   <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Ativo
+                  Adicionar Transação
                 </Button>
               </div>
             ) : (

@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Asset {
   symbol: string;
@@ -51,6 +52,13 @@ const mockAssetsData: Record<string, Asset[]> = {
 };
 
 export function usePortfolioData(portfolioId: string = 'carteira-principal'): PortfolioData {
+  const queryClient = useQueryClient();
+
+  // Invalidate all portfolio queries when portfolio changes
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['portfolio'] });
+  }, [portfolioId, queryClient]);
+
   const portfolioData = useMemo(() => {
     // Get assets for the selected portfolio (empty array if not found)
     const mockAssets = mockAssetsData[portfolioId] || [];
