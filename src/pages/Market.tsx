@@ -1,27 +1,20 @@
-import { useState } from "react";
-import { TrendingUp, TrendingDown, Search, Star, Filter, Calendar, Newspaper } from "lucide-react";
+// src/pages/Market.tsx
+import { useState, useEffect } from "react";
+import { TrendingUp, TrendingDown, Search, Star, Filter, Calendar, Newspaper, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { brapiService } from "@/services/brapi.service";
+import { MarketStock, MarketIndex } from "@/types/brapi.types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Market() {
-  const [watchlist, setWatchlist] = useState<string[]>(["AAPL", "MSFT"]);
-
-  const indices = [
-    { name: "IBOVESPA", value: 128450, change: 1.25, symbol: "^BVSP" },
-    { name: "S&P 500", value: 4890, change: 0.85, symbol: "^GSPC" },
-    { name: "NASDAQ", value: 15420, change: 1.42, symbol: "^IXIC" },
-    { name: "DOW JONES", value: 38650, change: -0.32, symbol: "^DJI" },
-  ];
-
-  const topMovers = [
-    { symbol: "NVDA", name: "NVIDIA Corp.", price: 495.22, change: 8.3, volume: "125M", category: "tech" },
-    { symbol: "TSLA", name: "Tesla Inc.", price: 242.15, change: -3.5, volume: "98M", category: "auto" },
-    { symbol: "AAPL", name: "Apple Inc.", price: 178.45, change: 2.1, volume: "87M", category: "tech" },
-    { symbol: "GOOGL", name: "Alphabet", price: 135.88, change: 1.8, volume: "65M", category: "tech" },
-    { symbol: "MSFT", name: "Microsoft", price: 335.12, change: 1.2, volume: "72M", category: "tech" },
-    { symbol: "AMZN", name: "Amazon", price: 148.22, change: 0.9, volume: "54M", category: "retail" },
-  ];
+  const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [indices, setIndices] = useState<MarketIndex[]>([]);
+  const [topMovers, setTopMovers] = useState<MarketStock[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const { toast } = useToast();
 
   const sectors = [
     { name: "Tecnologia", performance: 12.5, color: "success" },
@@ -34,30 +27,85 @@ export default function Market() {
 
   const news = [
     {
-      title: "Federal Reserve mantém taxa de juros em 5.5%",
-      source: "Bloomberg",
+      title: "Petrobras anuncia dividendos extraordinários",
+      source: "Valor Econômico",
       time: "2h atrás",
       impact: "high",
     },
     {
-      title: "NVIDIA anuncia nova linha de GPUs para IA",
-      source: "Reuters",
+      title: "Ibovespa supera 130 mil pontos pela primeira vez",
+      source: "InfoMoney",
       time: "4h atrás",
-      impact: "medium",
+      impact: "high",
     },
     {
-      title: "Dólar cai 1.2% frente ao real",
-      source: "Valor Econômico",
+      title: "Vale3 renova máximas históricas",
+      source: "Bloomberg",
       time: "5h atrás",
       impact: "medium",
     },
   ];
+
+  const fetchMarketData = async () => {
+    try {
+      setRefreshing(true);
+      
+      const indicesData = await brapiService.getBrazilianIndices();
+      setIndices(indicesData);
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const stocksData = await brapiService.getTopBrazilianStocks();
+      setTopMovers(stocksData);
+      
+      setLoading(false);
+      
+      if (!refreshing) {
+        toast({
+          title: "Dados carregados",
+          description: "Cotações atualizadas (delay 15min)",
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching market data:', error);
+      
+      const errorMessage = error.message || 'Erro desconhecido';
+      
+      toast({
+        title: "Erro ao carregar dados",
+        description: errorMessage.includes('Limite') 
+          ? "Limite de requisições atingido. Os dados serão atualizados em breve."
+          : "Não foi possível atualizar. Usando dados em cache.",
+        variant: "destructive",
+      });
+      setLoading(false);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMarketData();
+    const interval = setInterval(fetchMarketData, 15 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const toggleWatchlist = (symbol: string) => {
     setWatchlist((prev) =>
       prev.includes(symbol) ? prev.filter((s) => s !== symbol) : [...prev, symbol]
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <RefreshCw className="w-12 h-12 text-gold animate-spin mx-auto mb-4" />
+          <p className="text-lg text-muted-foreground">Carregando dados do mercado...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -67,9 +115,18 @@ export default function Market() {
           <h1 className="font-display text-4xl font-bold mb-2">
             Mercado <span className="gradient-gold">ao Vivo</span>
           </h1>
-          <p className="text-muted-foreground">Dados em tempo real e análise completa</p>
+          <p className="text-muted-foreground">Dados com delay de 15min - Cache local ativo</p>
         </div>
         <div className="flex gap-3">
+          <Button 
+            variant="glass" 
+            size="lg"
+            onClick={fetchMarketData}
+            disabled={refreshing}
+          >
+            <RefreshCw className={cn("w-5 h-5 mr-2", refreshing && "animate-spin")} />
+            Atualizar
+          </Button>
           <Button variant="glass" size="lg">
             <Calendar className="w-5 h-5 mr-2" />
             Calendário
@@ -94,7 +151,10 @@ export default function Market() {
               )}
             </div>
             <p className="text-3xl font-display font-bold mb-1">
-              {index.value.toLocaleString()}
+              {index.value.toLocaleString('pt-BR', { 
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0 
+              })}
             </p>
             <p
               className={cn(
@@ -109,13 +169,13 @@ export default function Market() {
         ))}
       </div>
 
-      {/* Search and Ticker */}
+      {/* Search and Top Movers */}
       <div className="glass-card p-6">
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Buscar ativo (ex: AAPL, PETR4, BTC)..."
+              placeholder="Buscar ativo (ex: PETR4, VALE3, ITUB4)..."
               className="pl-10 bg-secondary/50 border-gold/30"
             />
           </div>
@@ -126,56 +186,64 @@ export default function Market() {
 
         <div className="space-y-2">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-display text-xl font-bold">Maiores Altas</h3>
+            <h3 className="font-display text-xl font-bold">Principais Ações Brasileiras</h3>
             <Button variant="ghost" size="sm" className="text-gold">
               Ver todos
             </Button>
           </div>
 
-          {topMovers.map((stock) => (
-            <div
-              key={stock.symbol}
-              className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors border border-transparent hover:border-gold/20"
-            >
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => toggleWatchlist(stock.symbol)}
-                  className="transition-colors"
-                >
-                  <Star
-                    className={cn(
-                      "w-5 h-5",
-                      watchlist.includes(stock.symbol)
-                        ? "fill-gold text-gold"
-                        : "text-muted-foreground"
-                    )}
-                  />
-                </button>
-                <div>
-                  <p className="font-semibold">{stock.symbol}</p>
-                  <p className="text-sm text-muted-foreground">{stock.name}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-8">
-                <div className="text-right">
-                  <p className="font-semibold">${stock.price.toFixed(2)}</p>
-                  <p className="text-xs text-muted-foreground">Vol: {stock.volume}</p>
-                </div>
-                <div
-                  className={cn(
-                    "px-3 py-1 rounded-md font-semibold text-sm min-w-[80px] text-center",
-                    stock.change > 0
-                      ? "bg-success/10 text-success"
-                      : "bg-danger/10 text-danger"
-                  )}
-                >
-                  {stock.change > 0 ? "+" : ""}
-                  {stock.change.toFixed(2)}%
-                </div>
-              </div>
+          {topMovers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhum dado disponível no momento</p>
             </div>
-          ))}
+          ) : (
+            topMovers.map((stock) => (
+              <div
+                key={stock.symbol}
+                className="flex items-center justify-between p-4 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors border border-transparent hover:border-gold/20"
+              >
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => toggleWatchlist(stock.symbol)}
+                    className="transition-colors"
+                  >
+                    <Star
+                      className={cn(
+                        "w-5 h-5",
+                        watchlist.includes(stock.symbol)
+                          ? "fill-gold text-gold"
+                          : "text-muted-foreground"
+                      )}
+                    />
+                  </button>
+                  <div>
+                    <p className="font-semibold">{stock.symbol}</p>
+                    <p className="text-sm text-muted-foreground">{stock.name}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-8">
+                  <div className="text-right">
+                    <p className="font-semibold">
+                      R$ {stock.price.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Vol: {stock.volume}</p>
+                  </div>
+                  <div
+                    className={cn(
+                      "px-3 py-1 rounded-md font-semibold text-sm min-w-[80px] text-center",
+                      stock.change > 0
+                        ? "bg-success/10 text-success"
+                        : "bg-danger/10 text-danger"
+                    )}
+                  >
+                    {stock.change > 0 ? "+" : ""}
+                    {stock.changePercent.toFixed(2)}%
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -183,7 +251,7 @@ export default function Market() {
       <div className="glass-card p-6">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display text-xl font-bold">Performance por Setor</h3>
-          <span className="text-sm text-muted-foreground">Últimos 30 dias</span>
+          <span className="text-sm text-muted-foreground">Últimos 30 dias (dados estimados)</span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -222,7 +290,7 @@ export default function Market() {
           </div>
           <div>
             <h3 className="font-display text-xl font-bold">Notícias do Mercado</h3>
-            <p className="text-sm text-muted-foreground">Atualizações em tempo real</p>
+            <p className="text-sm text-muted-foreground">Últimas notícias B3</p>
           </div>
         </div>
 
