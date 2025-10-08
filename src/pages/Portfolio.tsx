@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import {
@@ -26,9 +26,11 @@ import { usePortfolios } from "@/hooks/usePortfolios";
 import { usePortfolioPositions } from "@/hooks/usePortfolioPositions";
 import { useAssetPrices } from "@/hooks/useAssets";
 import { StrategyInfo } from "@/components/StrategyInfo";
+import { useSyncPrices } from "@/hooks/useSyncPrices";
 
 export default function Portfolio() {
   const { portfolios, isLoading: isLoadingPortfolios, createPortfolio, isCreating } = usePortfolios();
+  const { syncPortfolioPrices, isSyncing } = useSyncPrices();
   const [selectedPortfolio, setSelectedPortfolio] = useState<string>("");
   const [newPortfolioName, setNewPortfolioName] = useState("");
   const [newPortfolioCurrency, setNewPortfolioCurrency] = useState("BRL");
@@ -305,6 +307,17 @@ export default function Portfolio() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Button 
+            variant="outline" 
+            size="lg"
+            onClick={() => portfolioId && syncPortfolioPrices(portfolioId)}
+            disabled={!portfolioId || isSyncing}
+            className="border-gold/30"
+          >
+            <RefreshCw className={`w-5 h-5 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Sincronizando...' : 'Atualizar Cotações'}
+          </Button>
 
           <Button 
             variant="default" 
