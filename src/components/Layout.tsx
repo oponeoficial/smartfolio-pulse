@@ -1,13 +1,11 @@
 import { ReactNode, useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, BookOpen, Wallet, Radar, TrendingUp, Menu, ChevronLeft } from "lucide-react";
+import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
+import { LayoutDashboard, BookOpen, Wallet, Radar, TrendingUp, ChevronLeft, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-interface LayoutProps {
-  children: ReactNode;
-}
+import { supabase } from "@/lib/supabase";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -17,8 +15,10 @@ const navItems = [
   { icon: BookOpen, label: "Educação", path: "/education" },
 ];
 
-export function Layout({ children }: LayoutProps) {
+export function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('sidebar-collapsed');
@@ -35,112 +35,123 @@ export function Layout({ children }: LayoutProps) {
     setIsCollapsed(!isCollapsed);
   };
 
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Até breve!",
+      });
+      navigate("/login");
+    } catch (error) {
+      toast({
+        title: "Erro ao fazer logout",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen flex w-full bg-background">
-      {/* Sidebar */}
       <aside 
         className={cn(
           "fixed left-0 top-0 h-screen glass-card border-r border-border/50 flex flex-col z-10 transition-all duration-300",
           isCollapsed ? "w-16" : "w-64"
         )}
       >
-        {/* Header with Logo and Toggle */}
         <div className="p-4 border-b border-gold/20 flex items-center justify-between">
           {!isCollapsed ? (
             <>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-blue-gold flex items-center justify-center shadow-gold">
-                  <TrendingUp className="w-6 h-6 text-white" />
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                  <span className="text-white font-bold text-sm">SF</span>
                 </div>
                 <div>
-                  <h1 className="font-display text-xl font-bold gradient-gold">TradeAI</h1>
-                  <p className="text-xs text-gold-light">Premium AI Trading</p>
+                  <h2 className="font-display font-bold text-sm gradient-gold">SmartFolio</h2>
+                  <p className="text-[10px] text-muted-foreground">Premium AI Trading</p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="hover:bg-gold/10"
-              >
-                <ChevronLeft className="w-5 h-5 text-gold" />
+              <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8">
+                <ChevronLeft className="w-4 h-4" />
               </Button>
             </>
           ) : (
-            <div className="flex flex-col items-center gap-2 w-full">
-              <div className="w-10 h-10 rounded-xl bg-gradient-blue-gold flex items-center justify-center shadow-gold">
-                <TrendingUp className="w-6 h-6 text-white" />
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleSidebar}
-                className="hover:bg-gold/10"
-              >
-                <Menu className="w-5 h-5 text-gold" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 mx-auto">
+              <ChevronLeft className="w-4 h-4 rotate-180" />
+            </Button>
           )}
         </div>
 
-        {/* Navigation */}
-        <TooltipProvider delayDuration={0}>
-          <nav className="flex-1 p-2 space-y-2">
+        <nav className="flex-1 p-4 space-y-2">
+          <TooltipProvider>
             {navItems.map((item) => {
+              const Icon = item.icon;
               const isActive = location.pathname === item.path;
-              const navButton = (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center rounded-lg transition-all group",
-                    isCollapsed ? "justify-center p-3" : "gap-3 px-4 py-3",
-                    isActive
-                      ? "bg-gold/10 text-gold border border-gold/30 shadow-gold"
-                      : "hover:bg-secondary text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <item.icon className={cn("w-5 h-5", isActive && "text-gold")} />
-                  {!isCollapsed && <span className="font-medium">{item.label}</span>}
-                </Link>
-              );
 
-              if (isCollapsed) {
-                return (
-                  <Tooltip key={item.path}>
-                    <TooltipTrigger asChild>
-                      {navButton}
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="glass-card">
+              return (
+                <Tooltip key={item.path} delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Link
+                      to={item.path}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-lg transition-all hover:bg-secondary/50",
+                        isActive && "bg-gradient-primary text-white shadow-lg shadow-primary/20",
+                        !isActive && "text-muted-foreground hover:text-foreground",
+                        isCollapsed && "justify-center"
+                      )}
+                    >
+                      <Icon className={cn("w-5 h-5", isActive && "text-white")} />
+                      {!isCollapsed && (
+                        <span className={cn("font-medium text-sm", isActive && "text-white")}>
+                          {item.label}
+                        </span>
+                      )}
+                    </Link>
+                  </TooltipTrigger>
+                  {isCollapsed && (
+                    <TooltipContent side="right">
                       <p>{item.label}</p>
                     </TooltipContent>
-                  </Tooltip>
-                );
-              }
-
-              return navButton;
+                  )}
+                </Tooltip>
+              );
             })}
-          </nav>
-        </TooltipProvider>
+          </TooltipProvider>
+        </nav>
 
-        {/* Footer */}
-        {!isCollapsed && (
-          <div className="p-4 border-t border-gold/20">
-            <div className="glass-card p-3 text-xs text-center border-gold/30">
-              <p className="text-gold-light">v1.0.0 - Premium</p>
-            </div>
-          </div>
-        )}
+        <div className="p-4 border-t border-border/50">
+          <TooltipProvider>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className={cn(
+                    "w-full justify-start gap-3 text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                    isCollapsed && "justify-center"
+                  )}
+                >
+                  <LogOut className="w-5 h-5" />
+                  {!isCollapsed && <span className="text-sm">Sair</span>}
+                </Button>
+              </TooltipTrigger>
+              {isCollapsed && (
+                <TooltipContent side="right">
+                  <p>Sair</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </aside>
 
-      {/* Main Content */}
-      <main 
-        className={cn(
-          "flex-1 p-8 transition-all duration-300",
-          isCollapsed ? "ml-16" : "ml-64"
-        )}
-      >
-        {children}
+      <main className={cn(
+        "flex-1 transition-all duration-300",
+        isCollapsed ? "ml-16" : "ml-64"
+      )}>
+        <div className="container mx-auto p-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

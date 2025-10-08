@@ -1,6 +1,6 @@
-import { Plus, History, Target, TrendingUp } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -22,160 +21,218 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioKPIs } from "@/components/PortfolioKPIs";
 import { useRebalanceLogic } from "@/hooks/useRebalanceLogic";
-import { usePortfolioData } from "@/hooks/usePortfolioData";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
-import { OrderHistory } from "@/components/OrderHistory";
-
-interface Portfolio {
-  id: string;
-  name: string;
-  currency: string;
-  strategy: string;
-  color: string;
-}
-
-interface Asset {
-  symbol: string;
-  name: string;
-  quantity: number;
-  avgPrice: number;
-  currentPrice: number;
-  allocation: number;
-  dividends: number;
-  brokerage: number;
-  type: 'stock' | 'reit' | 'fixedIncome' | 'crypto';
-}
-
-interface ClosedPosition {
-  symbol: string;
-  name: string;
-  entryDate: string;
-  exitDate: string;
-  entryPrice: number;
-  exitPrice: number;
-  quantity: number;
-  returnValue: number;
-  returnPercent: number;
-}
+import { usePortfolios } from "@/hooks/usePortfolios";
+import { usePortfolioPositions } from "@/hooks/usePortfolioPositions";
+import { useAssetPrices } from "@/hooks/useAssets";
+import { StrategyInfo } from "@/components/StrategyInfo";
 
 export default function Portfolio() {
-  const [portfolios, setPortfolios] = useState<Portfolio[]>([
-    { id: "carteira-principal", name: "Principal", currency: "BRL", strategy: "OpOne AI", color: "gold" },
-  ]);
-  const [selectedPortfolio, setSelectedPortfolio] = useState<string>("carteira-principal");
+  const { portfolios, isLoading: isLoadingPortfolios, createPortfolio, isCreating } = usePortfolios();
+  const [selectedPortfolio, setSelectedPortfolio] = useState<string>("");
   const [newPortfolioName, setNewPortfolioName] = useState("");
   const [newPortfolioCurrency, setNewPortfolioCurrency] = useState("BRL");
+  const [newPortfolioStrategy, setNewPortfolioStrategy] = useState("OpOne AI");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
+
+  const portfolioId = selectedPortfolio || portfolios[0]?.id || null;
   
-  const portfolioData = usePortfolioData(selectedPortfolio);
+  const { positions, transactions, closedPositions, isLoading: isLoadingPositions } = usePortfolioPositions(portfolioId);
+  
+  const assetIds = positions.map(p => p.asset_id);
+  const { prices } = useAssetPrices(assetIds);
 
-  const assets: Asset[] = [
-    { symbol: "PETR4", name: "Petrobras PN", quantity: 150, avgPrice: 32.5, currentPrice: 35.2, allocation: 35, dividends: 285.50, brokerage: 25.00, type: 'stock' },
-    { symbol: "VALE3", name: "Vale ON", quantity: 100, avgPrice: 68.0, currentPrice: 72.15, allocation: 25, dividends: 420.00, brokerage: 35.00, type: 'stock' },
-    { symbol: "ITUB4", name: "Itaú Unibanco PN", quantity: 200, avgPrice: 28.5, currentPrice: 30.80, allocation: 20, dividends: 340.00, brokerage: 18.50, type: 'stock' },
-    { symbol: "HGLG11", name: "CSHG Logística FII", quantity: 80, avgPrice: 145.0, currentPrice: 152.30, allocation: 15, dividends: 680.00, brokerage: 45.00, type: 'reit' },
-    { symbol: "BBAS3", name: "Banco do Brasil ON", quantity: 120, avgPrice: 42.0, currentPrice: 45.60, allocation: 5, dividends: 195.00, brokerage: 22.00, type: 'stock' },
-  ];
+  const currentPortfolio = portfolios.find(p => p.id === portfolioId);
 
-  const closedPositions: ClosedPosition[] = [
-    {
-      symbol: "TSLA",
-      name: "Tesla Inc.",
-      entryDate: "2024-01-15",
-      exitDate: "2024-03-20",
-      entryPrice: 180.5,
-      exitPrice: 215.3,
-      quantity: 20,
-      returnValue: 696.0,
-      returnPercent: 19.3,
-    },
-    {
-      symbol: "NVDA",
-      name: "NVIDIA",
-      entryDate: "2023-11-10",
-      exitDate: "2024-02-28",
-      entryPrice: 450.0,
-      exitPrice: 520.8,
-      quantity: 15,
-      returnValue: 1062.0,
-      returnPercent: 15.7,
-    },
-    {
-      symbol: "META",
-      name: "Meta Platforms",
-      entryDate: "2024-02-01",
-      exitDate: "2024-03-15",
-      entryPrice: 380.0,
-      exitPrice: 365.2,
-      quantity: 10,
-      returnValue: -148.0,
-      returnPercent: -3.9,
-    },
-  ];
+  const positionsWithPrices = useMemo(() => {
+    return positions.map(pos => ({
+      ...pos,
+      currentPrice: prices[pos.asset_id] || pos.avg_price,
+    }));
+  }, [positions, prices]);
 
-  const calculatePL = (qty: number, avg: number, current: number) => {
-    const total = qty * (current - avg);
-    const percent = ((current - avg) / avg) * 100;
-    return { total, percent };
-  };
+  const totalValue = positionsWithPrices.reduce((acc, pos) => 
+    acc + (pos.quantity * pos.currentPrice), 0
+  );
+
+  const investedValue = positionsWithPrices.reduce((acc, pos) => 
+    acc + pos.total_invested, 0
+  );
+
+  const totalReturn = investedValue > 0 ? ((totalValue - investedValue) / investedValue) * 100 : 0;
+  
+  // Variação diária estimada (mock - aguardando histórico de preços)
+  const totalValueChange = 0;
+  
+  // Score de diversificação baseado em:
+  // - Número de ativos (máx 10 pontos por ativo, até 50 pontos)
+  // - Distribuição de alocação (até 50 pontos de bônus se bem distribuído)
+  const numAssets = positions.length;
+  const baseScore = Math.min(numAssets * 10, 50);
+  
+  // Calcular distribuição: penalizar se um ativo domina muito
+  const maxAllocation = positionsWithPrices.length > 0 
+    ? Math.max(...positionsWithPrices.map(p => (p.quantity * p.currentPrice / totalValue) * 100))
+    : 0;
+  const distributionBonus = maxAllocation < 40 ? 50 : maxAllocation < 60 ? 30 : 10;
+  
+  const diversificationScore = Math.min(baseScore + distributionBonus, 100);
+  
+  const cdiRate = 12.5;
+  const cdiComparison = totalReturn >= 0 ? (totalReturn / cdiRate) * 100 : 0;
+
+  const assetsForRebalance = positionsWithPrices.map(pos => ({
+    symbol: pos.symbol,
+    name: pos.name,
+    quantity: pos.quantity,
+    avgPrice: pos.avg_price,
+    currentPrice: pos.currentPrice,
+    allocation: totalValue > 0 ? (pos.quantity * pos.currentPrice / totalValue) * 100 : 0,
+    dividends: 0,
+    brokerage: pos.total_brokerage,
+    type: pos.type,
+  }));
+
+  const { rebalanceActions, rebalanceStatus } = useRebalanceLogic(
+    assetsForRebalance,
+    currentPortfolio?.strategy || 'OpOne AI',
+    5
+  );
 
   const handleCreatePortfolio = () => {
     if (newPortfolioName.trim()) {
-      const newPortfolio: Portfolio = {
-        id: `carteira-${Date.now()}`,
+      createPortfolio({
         name: newPortfolioName,
         currency: newPortfolioCurrency,
-        strategy: "OpOne AI",
-        color: "gold",
-      };
-      setPortfolios([...portfolios, newPortfolio]);
-      setSelectedPortfolio(newPortfolio.id);
+        strategy: newPortfolioStrategy,
+      });
       setNewPortfolioName("");
       setIsCreateDialogOpen(false);
     }
   };
 
-  const totalClosedReturn = closedPositions.reduce((acc, pos) => acc + pos.returnValue, 0);
-  const winRate = (closedPositions.filter((pos) => pos.returnValue > 0).length / closedPositions.length) * 100;
-  const maxProfit = Math.max(...closedPositions.map((pos) => pos.returnValue));
-  const maxLoss = Math.min(...closedPositions.map((pos) => pos.returnValue));
+  const totalClosedReturn = closedPositions.reduce((acc, pos) => acc + pos.return_value, 0);
+  const winRate = closedPositions.length > 0 
+    ? (closedPositions.filter((pos) => pos.return_value > 0).length / closedPositions.length) * 100 
+    : 0;
+  const maxProfit = closedPositions.length > 0 
+    ? Math.max(...closedPositions.map((pos) => pos.return_value)) 
+    : 0;
+  const maxLoss = closedPositions.length > 0 
+    ? Math.min(...closedPositions.map((pos) => pos.return_value)) 
+    : 0;
 
-  // Calculate KPIs
-  const totalValue = assets.reduce((acc, asset) => acc + asset.quantity * asset.currentPrice, 0);
-  const investedValue = assets.reduce((acc, asset) => acc + asset.quantity * asset.avgPrice, 0);
-  const totalReturn = ((totalValue - investedValue) / investedValue) * 100;
-  const totalValueChange = 2.3; // Mock daily change
-  const diversificationScore = 72; // Mock diversification score
-  const cdiRate = 12.5;
-  const cdiComparison = (totalReturn / cdiRate) * 100;
+  const currencySymbol = currentPortfolio?.currency === "BRL" ? "R$" : 
+                         currentPortfolio?.currency === "USD" ? "US$" : "€";
 
-  // Get rebalance logic
-  const currentPortfolio = portfolios.find(p => p.id === selectedPortfolio);
-  const { rebalanceActions, rebalanceStatus } = useRebalanceLogic(
-    assets,
-    currentPortfolio?.strategy || 'OpOne AI',
-    5
-  );
+  if (isLoadingPortfolios) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">Carregando carteiras...</p>
+      </div>
+    );
+  }
+
+  if (portfolios.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen space-y-6">
+        <div className="text-center space-y-2">
+          <h1 className="font-display text-4xl font-bold">
+            Nenhuma <span className="gradient-gold">Carteira</span>
+          </h1>
+          <p className="text-muted-foreground">Crie sua primeira carteira para começar</p>
+        </div>
+        <Button size="lg" onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="w-5 h-5 mr-2" />
+          Criar Primeira Carteira
+        </Button>
+        
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-2xl gradient-gold">Criar Nova Carteira</DialogTitle>
+              <DialogDescription>
+                Configure sua nova carteira de investimentos
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome da Carteira</Label>
+                <Input
+                  id="name"
+                  placeholder="Ex: Ações Brasil, Stocks EUA..."
+                  value={newPortfolioName}
+                  onChange={(e) => setNewPortfolioName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="currency">Moeda Base</Label>
+                <Select value={newPortfolioCurrency} onValueChange={setNewPortfolioCurrency}>
+                  <SelectTrigger id="currency">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="BRL">BRL - Real Brasileiro</SelectItem>
+                    <SelectItem value="USD">USD - Dólar Americano</SelectItem>
+                    <SelectItem value="EUR">EUR - Euro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="strategy">Estratégia</Label>
+                <Select value={newPortfolioStrategy} onValueChange={setNewPortfolioStrategy}>
+                  <SelectTrigger id="strategy">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="OpOne AI">OpOne AI</SelectItem>
+                    <SelectItem value="Buy & Hold">Buy & Hold</SelectItem>
+                    <SelectItem value="Day Trading">Day Trading</SelectItem>
+                    <SelectItem value="Swing Trading">Swing Trading</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleCreatePortfolio} disabled={isCreating}>
+                {isCreating ? "Criando..." : "Criar Carteira"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-4xl font-bold mb-2">
             Minha <span className="gradient-gold">Carteira</span>
           </h1>
-          <p className="text-muted-foreground">Gerencie seus investimentos e acompanhe performance</p>
+          <div className="flex items-center gap-3">
+            <p className="text-muted-foreground">Gerencie seus investimentos e acompanhe performance</p>
+            {currentPortfolio && (
+              <StrategyInfo strategy={currentPortfolio.strategy} />
+            )}
+          </div>
         </div>
         <div className="flex gap-3">
-          <Select value={selectedPortfolio} onValueChange={(value) => {
-            if (value === "new") {
-              setIsCreateDialogOpen(true);
-            } else {
-              setSelectedPortfolio(value);
-            }
-          }}>
+          <Select 
+            value={portfolioId || ""} 
+            onValueChange={(value) => {
+              if (value === "new") {
+                setIsCreateDialogOpen(true);
+              } else {
+                setSelectedPortfolio(value);
+              }
+            }}
+          >
             <SelectTrigger className="w-[200px] glass-card border-gold/30">
               <SelectValue />
             </SelectTrigger>
@@ -223,12 +280,28 @@ export default function Portfolio() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="strategy">Estratégia</Label>
+                  <Select value={newPortfolioStrategy} onValueChange={setNewPortfolioStrategy}>
+                    <SelectTrigger id="strategy">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="OpOne AI">OpOne AI</SelectItem>
+                      <SelectItem value="Buy & Hold">Buy & Hold</SelectItem>
+                      <SelectItem value="Day Trading">Day Trading</SelectItem>
+                      <SelectItem value="Swing Trading">Swing Trading</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button onClick={handleCreatePortfolio}>Criar Carteira</Button>
+                <Button onClick={handleCreatePortfolio} disabled={isCreating}>
+                  {isCreating ? "Criando..." : "Criar Carteira"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -249,10 +322,9 @@ export default function Portfolio() {
         open={isAddTransactionModalOpen} 
         onOpenChange={setIsAddTransactionModalOpen}
         currency={currentPortfolio?.currency || "BRL"}
-        portfolioId={selectedPortfolio}
+        portfolioId={portfolioId || ""}
       />
 
-      {/* KPIs Grid */}
       <PortfolioKPIs
         totalValue={totalValue}
         totalValueChange={totalValueChange}
@@ -271,7 +343,6 @@ export default function Portfolio() {
         </TabsList>
 
         <TabsContent value="positions" className="space-y-6">
-          {/* Assets Table */}
           <div className="glass-card overflow-hidden">
             <div className="p-6 border-b border-border/50">
               <h2 className="font-display text-2xl font-bold">Posições Abertas</h2>
@@ -280,223 +351,247 @@ export default function Portfolio() {
               </p>
             </div>
 
-            {assets.length === 0 ? (
+            {isLoadingPositions ? (
               <div className="p-12 text-center">
-                <div className="mx-auto w-16 h-16 rounded-full bg-gold/10 flex items-center justify-center mb-4">
-                  <TrendingUp className="w-8 h-8 text-gold" />
-                </div>
-                <h3 className="font-display text-xl font-bold mb-2">Esta carteira está vazia</h3>
-                <p className="text-muted-foreground mb-6">Adicione sua primeira transação para começar a acompanhar seus investimentos</p>
-                <Button onClick={() => setIsAddTransactionModalOpen(true)} className="bg-[#00C853] hover:bg-[#00B248]">
+                <p className="text-muted-foreground">Carregando posições...</p>
+              </div>
+            ) : positionsWithPrices.length === 0 ? (
+              <div className="p-12 text-center space-y-4">
+                <p className="text-muted-foreground">Nenhuma posição aberta</p>
+                <Button onClick={() => setIsAddTransactionModalOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Transação
+                  Adicionar Primeira Transação
                 </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-secondary/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Ativo</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Preço Médio</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Preço Atual</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Dividendos</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Sem Div</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">L/P Com Div</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Alocação</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Insight</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {assets.map((asset, index) => {
-                    const currencySymbol = currentPortfolio?.currency === "BRL" ? "R$" : currentPortfolio?.currency === "USD" ? "US$" : "€";
-                    const totalInvested = asset.quantity * asset.avgPrice;
-                    const totalToday = asset.quantity * asset.currentPrice;
-                    const plWithoutDividends = totalToday - totalInvested;
-                    const plWithDividends = (totalToday + asset.dividends) - totalInvested;
-                    const plPercentWithoutDiv = (plWithoutDividends / totalInvested) * 100;
-                    const plPercentWithDiv = (plWithDividends / totalInvested) * 100;
-                    const rebalanceAction = rebalanceActions[index];
-                    
-                    return (
-                      <tr key={asset.symbol} className="hover:bg-secondary/30 transition-colors">
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="font-semibold">{asset.symbol}</p>
-                            <p className="text-sm text-muted-foreground">{asset.name}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">{asset.quantity}</td>
-                        <td className="px-6 py-4 text-right">{currencySymbol} {asset.avgPrice.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right font-semibold">{currencySymbol} {asset.currentPrice.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <p className="font-semibold">{currencySymbol} {asset.dividends.toFixed(2)}</p>
-                          <p className="text-xs text-muted-foreground">este ano</p>
-                        </td>
-                        <td className="px-6 py-4 text-right">{currencySymbol} {asset.brokerage.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className={plWithoutDividends >= 0 ? "text-success" : "text-danger"}>
-                            <p className="font-semibold">
-                              {plWithoutDividends >= 0 ? '+' : ''}{currencySymbol} {plWithoutDividends.toFixed(2)}
-                            </p>
-                            <p className="text-sm">
-                              ({plPercentWithoutDiv >= 0 ? '+' : ''}{plPercentWithoutDiv.toFixed(1)}%)
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className={plWithDividends >= 0 ? "text-success" : "text-danger"}>
-                            <p className="font-semibold">
-                              {plWithDividends >= 0 ? '+' : ''}{currencySymbol} {plWithDividends.toFixed(2)}
-                            </p>
-                            <p className="text-sm">
-                              ({plPercentWithDiv >= 0 ? '+' : ''}{plPercentWithDiv.toFixed(1)}%)
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-primary"
-                                style={{ width: `${asset.allocation}%` }}
-                              />
+                <table className="w-full">
+                  <thead className="bg-secondary/50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Ativo</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">PM</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Cotação</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">P&L</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Alocação</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {positionsWithPrices.map((pos, index) => {
+                      const totalToday = pos.quantity * pos.currentPrice;
+                      const pl = totalToday - pos.total_invested;
+                      const plPercent = (pl / pos.total_invested) * 100;
+                      const allocation = totalValue > 0 ? (totalToday / totalValue) * 100 : 0;
+                      const rebalanceAction = rebalanceActions[index] || { action: 'HOLD', message: 'Manter posição' };
+
+                      return (
+                        <tr key={pos.asset_id} className="hover:bg-secondary/30 transition-colors">
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-semibold">{pos.symbol}</p>
+                              <p className="text-sm text-muted-foreground">{pos.name}</p>
                             </div>
-                            <span className="text-sm">{asset.allocation}%</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                            rebalanceAction.action === 'SELL' 
-                              ? 'bg-danger/10 text-danger border border-danger/20' 
-                              : rebalanceAction.action === 'BUY'
-                              ? 'bg-success/10 text-success border border-success/20'
-                              : 'bg-muted/50 text-muted-foreground border border-border/50'
-                          }`}>
-                            {rebalanceAction.message}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">{pos.quantity.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right">{currencySymbol} {pos.avg_price.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right font-semibold">{currencySymbol} {pos.currentPrice.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right">{currencySymbol} {pos.total_brokerage.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right">
+                            <div className={pl >= 0 ? "text-success" : "text-danger"}>
+                              <p className="font-semibold">
+                                {pl >= 0 ? '+' : ''}{currencySymbol} {pl.toFixed(2)}
+                              </p>
+                              <p className="text-sm">
+                                ({plPercent >= 0 ? '+' : ''}{plPercent.toFixed(1)}%)
+                              </p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-16 h-2 bg-secondary rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-gradient-primary"
+                                  style={{ width: `${allocation}%` }}
+                                />
+                              </div>
+                              <span className="text-sm">{allocation.toFixed(1)}%</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                              rebalanceAction.action === 'SELL' 
+                                ? 'bg-danger/10 text-danger border border-danger/20' 
+                                : rebalanceAction.action === 'BUY'
+                                ? 'bg-success/10 text-success border border-success/20'
+                                : 'bg-muted/50 text-muted-foreground border border-border/50'
+                            }`}>
+                              {rebalanceAction.message}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </TabsContent>
 
         <TabsContent value="closed" className="space-y-6">
-          {/* Performance Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-gold/10 border border-gold/20">
-                  <History className="w-5 h-5 text-gold" />
-                </div>
-                <span className="text-sm text-muted-foreground">Retorno Total</span>
-              </div>
+              <p className="text-sm text-muted-foreground mb-2">Retorno Total</p>
               <p className={`text-3xl font-display font-bold ${totalClosedReturn >= 0 ? "text-success" : "text-danger"}`}>
-                R$ {totalClosedReturn >= 0 ? "+" : ""}
-                {totalClosedReturn.toFixed(2)}
+                {currencySymbol} {totalClosedReturn >= 0 ? '+' : ''}{totalClosedReturn.toFixed(2)}
               </p>
             </div>
-
             <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-success/10 border border-success/20">
-                  <Target className="w-5 h-5 text-success" />
-                </div>
-                <span className="text-sm text-muted-foreground">Taxa de Acerto</span>
-              </div>
-              <p className="text-3xl font-display font-bold text-success">{winRate.toFixed(1)}%</p>
+              <p className="text-sm text-muted-foreground mb-2">Win Rate</p>
+              <p className="text-3xl font-display font-bold text-primary">{winRate.toFixed(1)}%</p>
             </div>
-
             <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-success/10 border border-success/20">
-                  <TrendingUp className="w-5 h-5 text-success" />
-                </div>
-                <span className="text-sm text-muted-foreground">Maior Lucro</span>
-              </div>
-              <p className="text-3xl font-display font-bold text-success">R$ +{maxProfit.toFixed(2)}</p>
+              <p className="text-sm text-muted-foreground mb-2">Maior Ganho</p>
+              <p className="text-3xl font-display font-bold text-success">
+                {currencySymbol} {maxProfit.toFixed(2)}
+              </p>
             </div>
-
             <div className="glass-card p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-danger/10 border border-danger/20">
-                  <TrendingUp className="w-5 h-5 text-danger rotate-180" />
-                </div>
-                <span className="text-sm text-muted-foreground">Maior Prejuízo</span>
-              </div>
-              <p className="text-3xl font-display font-bold text-danger">R$ {maxLoss.toFixed(2)}</p>
+              <p className="text-sm text-muted-foreground mb-2">Maior Perda</p>
+              <p className="text-3xl font-display font-bold text-danger">
+                {currencySymbol} {maxLoss.toFixed(2)}
+              </p>
             </div>
           </div>
 
-          {/* Closed Positions Table */}
           <div className="glass-card overflow-hidden">
             <div className="p-6 border-b border-border/50">
-              <h2 className="font-display text-2xl font-bold">Histórico de Operações</h2>
+              <h2 className="font-display text-2xl font-bold">Operações Finalizadas</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Trades completos (compra + venda)
+              </p>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-secondary/50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold">Ativo</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Data Entrada</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Data Saída</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Preço Entrada</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Preço Saída</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
-                    <th className="px-6 py-4 text-right text-sm font-semibold">Retorno</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/50">
-                  {closedPositions.map((position) => {
-                    const currencySymbol = currentPortfolio?.currency === "BRL" ? "R$" : currentPortfolio?.currency === "USD" ? "US$" : "€";
-                    return (
-                      <tr key={position.symbol + position.exitDate} className="hover:bg-secondary/30 transition-colors">
+            {closedPositions.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-muted-foreground">Nenhuma operação finalizada</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-secondary/50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Ativo</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Data Entrada</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Data Saída</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Preço Entrada</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Preço Saída</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Retorno</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {closedPositions.map((pos) => (
+                      <tr key={`${pos.asset_id}-${pos.exit_date}`} className="hover:bg-secondary/30 transition-colors">
                         <td className="px-6 py-4">
                           <div>
-                            <p className="font-semibold">{position.symbol}</p>
-                            <p className="text-sm text-muted-foreground">{position.name}</p>
+                            <p className="font-semibold">{pos.symbol}</p>
+                            <p className="text-sm text-muted-foreground">{pos.name}</p>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-right text-sm">
-                          {new Date(position.entryDate).toLocaleDateString("pt-BR")}
-                        </td>
-                        <td className="px-6 py-4 text-right text-sm">
-                          {new Date(position.exitDate).toLocaleDateString("pt-BR")}
-                        </td>
-                        <td className="px-6 py-4 text-right">{currencySymbol} {position.entryPrice.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right">{currencySymbol} {position.exitPrice.toFixed(2)}</td>
-                        <td className="px-6 py-4 text-right">{position.quantity}</td>
+                        <td className="px-6 py-4 text-right">{new Date(pos.entry_date).toLocaleDateString('pt-BR')}</td>
+                        <td className="px-6 py-4 text-right">{new Date(pos.exit_date).toLocaleDateString('pt-BR')}</td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {pos.entry_price.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">{currencySymbol} {pos.exit_price.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">{pos.quantity.toFixed(2)}</td>
                         <td className="px-6 py-4 text-right">
-                          <div className={position.returnValue >= 0 ? "text-success" : "text-danger"}>
+                          <div className={pos.return_value >= 0 ? "text-success" : "text-danger"}>
                             <p className="font-semibold">
-                              {currencySymbol} {position.returnValue >= 0 ? "+" : ""}
-                              {position.returnValue.toFixed(2)}
+                              {pos.return_value >= 0 ? '+' : ''}{currencySymbol} {pos.return_value.toFixed(2)}
                             </p>
                             <p className="text-sm">
-                              ({position.returnPercent >= 0 ? "+" : ""}
-                              {position.returnPercent.toFixed(2)}%)
+                              ({pos.return_percent >= 0 ? '+' : ''}{pos.return_percent.toFixed(1)}%)
                             </p>
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-6">
-          <OrderHistory currency={currentPortfolio?.currency || "BRL"} />
+          <div className="glass-card overflow-hidden">
+            <div className="p-6 border-b border-border/50">
+              <h2 className="font-display text-2xl font-bold">Histórico de Ordens</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Todas as operações executadas na carteira
+              </p>
+            </div>
+
+            {transactions.length === 0 ? (
+              <div className="p-12 text-center">
+                <p className="text-muted-foreground">Nenhuma transação registrada</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-secondary/50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Data</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Operação</th>
+                      <th className="px-6 py-4 text-left text-sm font-semibold">Ativo</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Quantidade</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Preço</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
+                      <th className="px-6 py-4 text-right text-sm font-semibold">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
+                    {transactions.map((tx) => (
+                      <tr key={tx.id} className="hover:bg-secondary/30 transition-colors">
+                        <td className="px-6 py-4">
+                          {new Date(tx.transaction_date).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              tx.operation === "BUY"
+                                ? "bg-success/10 text-success border border-success/20"
+                                : "bg-danger/10 text-danger border border-danger/20"
+                            }`}
+                          >
+                            {tx.operation === "BUY" ? "COMPRA" : "VENDA"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-semibold">{tx.asset?.symbol}</p>
+                            <p className="text-sm text-muted-foreground">{tx.asset?.name}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">{tx.quantity.toFixed(2)}</td>
+                        <td className="px-6 py-4 text-right">
+                          {currencySymbol} {tx.price.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {currencySymbol} {tx.brokerage.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-foreground">
+                          {currencySymbol} {tx.total.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

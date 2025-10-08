@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Calendar } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import { useAssets } from "@/hooks/useAssets";
 import {
   Dialog,
   DialogContent,
@@ -33,30 +35,20 @@ interface AddTransactionModalProps {
   portfolioId: string;
 }
 
-const availableAssets = [
-  { symbol: "PETR4", name: "Petrobras PN" },
-  { symbol: "VALE3", name: "Vale ON" },
-  { symbol: "ITUB4", name: "Itaú Unibanco PN" },
-  { symbol: "BBAS3", name: "Banco do Brasil ON" },
-  { symbol: "HGLG11", name: "CSHG Logística FII" },
-  { symbol: "MXRF11", name: "Maxi Renda FII" },
-  { symbol: "AAPL34", name: "Apple BDR" },
-  { symbol: "MSFT34", name: "Microsoft BDR" },
-];
-
 export function AddTransactionModal({ open, onOpenChange, currency, portfolioId }: AddTransactionModalProps) {
   const queryClient = useQueryClient();
+  const { assets } = useAssets();
   const [date, setDate] = useState<Date>(new Date());
-  const [asset, setAsset] = useState<string>("");
+  const [assetId, setAssetId] = useState<string>("");
   const [operation, setOperation] = useState<"BUY" | "SELL">("BUY");
   const [quantity, setQuantity] = useState<string>("");
   const [price, setPrice] = useState<string>("");
   const [brokerage, setBrokerage] = useState<string>("0");
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const currencySymbol = currency === "BRL" ? "R$" : currency === "USD" ? "US$" : "€";
 
-  // Calculate totals
   const calculateTotal = () => {
     const qty = parseFloat(quantity) || 0;
     const prc = parseFloat(price) || 0;
@@ -71,11 +63,10 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
 
   const total = calculateTotal();
 
-  // Validate form
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!asset) newErrors.asset = "Selecione um ativo";
+    if (!assetId) newErrors.asset = "Selecione um ativo";
     if (!quantity || parseFloat(quantity) <= 0) newErrors.quantity = "Quantidade deve ser maior que 0";
     if (!price || parseFloat(price) <= 0) newErrors.price = "Preço deve ser maior que 0";
     if (date > new Date()) newErrors.date = "Data não pode ser futura";
@@ -85,47 +76,50 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
   };
 
   const handleSubmit = async () => {
-    if (validate()) {
-      try {
-        // TODO: Replace with actual API call when backend is ready
-        const transactionData = {
-          portfolioId,
-          date,
-          asset,
-          operation,
-          quantity: parseFloat(quantity),
-          price: parseFloat(price),
-          brokerage: parseFloat(brokerage),
-          total,
-        };
-        
-        console.log("Salvando transação:", transactionData);
-        
-        // Invalidate all portfolio-related queries to trigger refetch
-        await queryClient.invalidateQueries({ queryKey: ['portfolio-orders', portfolioId] });
-        await queryClient.invalidateQueries({ queryKey: ['portfolio-positions', portfolioId] });
-        await queryClient.invalidateQueries({ queryKey: ['portfolio-kpis', portfolioId] });
-        
-        toast({
-          title: "Transação adicionada",
-          description: "A transação foi registrada com sucesso!",
-        });
-        
-        onOpenChange(false);
-        resetForm();
-      } catch (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao adicionar transação. Tente novamente.",
-          variant: "destructive",
-        });
-      }
+    if (!validate()) return;
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.from('transactions').insert({
+        portfolio_id: portfolioId,
+        asset_id: assetId,
+        operation,
+        quantity: parseFloat(quantity),
+        price: parseFloat(price),
+        brokerage: parseFloat(brokerage),
+        total,
+        transaction_date: format(date, 'yyyy-MM-dd'),
+      });
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ['positions', portfolioId] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions', portfolioId] });
+      await queryClient.invalidateQueries({ queryKey: ['closed-positions', portfolioId] });
+
+      toast({
+        title: "Transação adicionada",
+        description: "A transação foi registrada com sucesso!",
+      });
+
+      onOpenChange(false);
+      resetForm();
+    } catch (error: any) {
+      console.error('Erro ao salvar transação:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao adicionar transação. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   const resetForm = () => {
     setDate(new Date());
-    setAsset("");
+    setAssetId("");
     setOperation("BUY");
     setQuantity("");
     setPrice("");
@@ -150,7 +144,6 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Data da Operação */}
           <div className="space-y-2">
             <Label htmlFor="date">Data da Operação</Label>
             <Popover>
@@ -161,6 +154,7 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
                     "w-full justify-start text-left font-normal",
                     !date && "text-muted-foreground"
                   )}
+                  disabled={loading}
                 >
                   <Calendar className="mr-2 h-4 w-4" />
                   {date ? format(date, "dd/MM/yyyy") : <span>Selecione a data</span>}
@@ -180,16 +174,15 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
             {errors.date && <p className="text-sm text-danger">{errors.date}</p>}
           </div>
 
-          {/* Ativo */}
           <div className="space-y-2">
             <Label htmlFor="asset">Ativo</Label>
-            <Select value={asset} onValueChange={setAsset}>
+            <Select value={assetId} onValueChange={setAssetId} disabled={loading}>
               <SelectTrigger id="asset" className={errors.asset ? "border-danger" : ""}>
                 <SelectValue placeholder="Selecione o ativo" />
               </SelectTrigger>
               <SelectContent>
-                {availableAssets.map((a) => (
-                  <SelectItem key={a.symbol} value={a.symbol}>
+                {assets.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
                     {a.symbol} - {a.name}
                   </SelectItem>
                 ))}
@@ -198,10 +191,9 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
             {errors.asset && <p className="text-sm text-danger">{errors.asset}</p>}
           </div>
 
-          {/* Operação */}
           <div className="space-y-2">
             <Label>Operação</Label>
-            <RadioGroup value={operation} onValueChange={(val) => setOperation(val as "BUY" | "SELL")}>
+            <RadioGroup value={operation} onValueChange={(val) => setOperation(val as "BUY" | "SELL")} disabled={loading}>
               <div className="flex gap-6">
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="BUY" id="buy" />
@@ -215,7 +207,6 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
             </RadioGroup>
           </div>
 
-          {/* Quantidade */}
           <div className="space-y-2">
             <Label htmlFor="quantity">Quantidade</Label>
             <Input
@@ -227,11 +218,11 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               className={errors.quantity ? "border-danger" : ""}
+              disabled={loading}
             />
             {errors.quantity && <p className="text-sm text-danger">{errors.quantity}</p>}
           </div>
 
-          {/* Preço */}
           <div className="space-y-2">
             <Label htmlFor="price">Preço ({currencySymbol})</Label>
             <Input
@@ -243,13 +234,13 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               className={errors.price ? "border-danger" : ""}
+              disabled={loading}
             />
             {errors.price && <p className="text-sm text-danger">{errors.price}</p>}
           </div>
 
-          {/* Corretagem */}
           <div className="space-y-2">
-            <Label htmlFor="brokerage">Corretagem ({currencySymbol}) - Opcional</Label>
+            <Label htmlFor="brokerage">Corretagem ({currencySymbol})</Label>
             <Input
               id="brokerage"
               type="number"
@@ -258,35 +249,26 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
               placeholder="0.00"
               value={brokerage}
               onChange={(e) => setBrokerage(e.target.value)}
+              disabled={loading}
             />
           </div>
 
-          {/* Total */}
-          {quantity && price && (
-            <div className="glass-card p-4 mt-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">
-                  Total {operation === "BUY" ? "Compra" : "Venda"}:
-                </span>
-                <span className="text-2xl font-display font-bold gradient-gold">
-                  {currencySymbol} {total.toFixed(2)}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                ({parseFloat(quantity) || 0} × {currencySymbol} {parseFloat(price).toFixed(2)}) 
-                {operation === "BUY" ? " + " : " - "}
-                {currencySymbol} {parseFloat(brokerage).toFixed(2)}
-              </p>
+          <div className="glass-card p-4 bg-secondary/20">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold">Total {operation === "BUY" ? "Investido" : "Recebido"}:</span>
+              <span className="text-xl font-bold gradient-gold">
+                {currencySymbol} {total.toFixed(2)}
+              </span>
             </div>
-          )}
+          </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} className="bg-[#00C853] hover:bg-[#00B248]">
-            Adicionar Transação
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? "Salvando..." : "Adicionar Transação"}
           </Button>
         </DialogFooter>
       </DialogContent>
