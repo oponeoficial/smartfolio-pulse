@@ -1,4 +1,5 @@
-import { Plus, RefreshCw } from "lucide-react";
+// src/pages/Portfolio.tsx
+import { Plus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useMemo } from "react";
 import {
@@ -16,43 +17,61 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PortfolioKPIs } from "@/components/PortfolioKPIs";
 import { useRebalanceLogic } from "@/hooks/useRebalanceLogic";
 import { AddTransactionModal } from "@/components/AddTransactionModal";
+import { EditTransactionModal } from "@/components/EditTransactionModal";
 import { usePortfolios } from "@/hooks/usePortfolios";
 import { usePortfolioPositions } from "@/hooks/usePortfolioPositions";
-import { useAssetPrices } from "@/hooks/useAssets";
+import { useMarketPrices } from "@/hooks/useMarketPrices";
 import { StrategyInfo } from "@/components/StrategyInfo";
-import { useSyncPrices } from "@/hooks/useSyncPrices";
+import { supabase } from "@/lib/supabase";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Portfolio() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { portfolios, isLoading: isLoadingPortfolios, createPortfolio, isCreating } = usePortfolios();
-  const { syncPortfolioPrices, isSyncing } = useSyncPrices();
   const [selectedPortfolio, setSelectedPortfolio] = useState<string>("");
   const [newPortfolioName, setNewPortfolioName] = useState("");
   const [newPortfolioCurrency, setNewPortfolioCurrency] = useState("BRL");
   const [newPortfolioStrategy, setNewPortfolioStrategy] = useState("OpOne AI");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAddTransactionModalOpen, setIsAddTransactionModalOpen] = useState(false);
+  const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
 
   const portfolioId = selectedPortfolio || portfolios[0]?.id || null;
   
   const { positions, transactions, closedPositions, isLoading: isLoadingPositions } = usePortfolioPositions(portfolioId);
   
-  const assetIds = positions.map(p => p.asset_id);
-  const { prices } = useAssetPrices(assetIds);
+  // Usar cotações reais do Market ao invés do Supabase
+  const symbols = positions.map(p => p.symbol);
+  const { prices: marketPrices } = useMarketPrices(symbols);
 
   const currentPortfolio = portfolios.find(p => p.id === portfolioId);
 
   const positionsWithPrices = useMemo(() => {
     return positions.map(pos => ({
       ...pos,
-      currentPrice: prices[pos.asset_id] || pos.avg_price,
+      currentPrice: marketPrices[pos.symbol]?.price || pos.avg_price,
     }));
-  }, [positions, prices]);
+  }, [positions, marketPrices]);
 
   const totalValue = positionsWithPrices.reduce((acc, pos) => 
     acc + (pos.quantity * pos.currentPrice), 0
@@ -62,18 +81,14 @@ export default function Portfolio() {
     acc + pos.total_invested, 0
   );
 
-  const totalReturn = investedValue > 0 ? ((totalValue - investedValue) / investedValue) * 100 : 0;
+  const totalReturn = investedValue > 0 ?
+    ((totalValue - investedValue) / investedValue) * 100 : 0;
   
-  // Variação diária estimada (mock - aguardando histórico de preços)
   const totalValueChange = 0;
   
-  // Score de diversificação baseado em:
-  // - Número de ativos (máx 10 pontos por ativo, até 50 pontos)
-  // - Distribuição de alocação (até 50 pontos de bônus se bem distribuído)
   const numAssets = positions.length;
   const baseScore = Math.min(numAssets * 10, 50);
   
-  // Calcular distribuição: penalizar se um ativo domina muito
   const maxAllocation = positionsWithPrices.length > 0 
     ? Math.max(...positionsWithPrices.map(p => (p.quantity * p.currentPrice / totalValue) * 100))
     : 0;
@@ -111,6 +126,42 @@ export default function Portfolio() {
       });
       setNewPortfolioName("");
       setIsCreateDialogOpen(false);
+    }
+  };
+
+  const handleEditTransaction = (transaction: any) => {
+    setSelectedTransaction(transaction);
+    setIsEditTransactionModalOpen(true);
+  };
+
+  const handleDeleteTransaction = async () => {
+    if (!deleteTransactionId) return;
+
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', deleteTransactionId);
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ['positions', portfolioId] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions', portfolioId] });
+      await queryClient.invalidateQueries({ queryKey: ['closed-positions', portfolioId] });
+
+      toast({
+        title: "Transação deletada",
+        description: "A transação foi removida com sucesso!",
+      });
+
+      setDeleteTransactionId(null);
+    } catch (error: any) {
+      console.error('Erro ao deletar transação:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao deletar transação. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -244,9 +295,8 @@ export default function Portfolio() {
                   {portfolio.name}
                 </SelectItem>
               ))}
-              <SelectItem value="new" className="text-gold font-semibold border-t border-border/50 mt-1 pt-2">
-                <Plus className="w-4 h-4 mr-2 inline" />
-                Nova Carteira...
+              <SelectItem value="new" className="text-gold font-semibold">
+                + Criar Nova Carteira
               </SelectItem>
             </SelectContent>
           </Select>
@@ -309,17 +359,6 @@ export default function Portfolio() {
           </Dialog>
 
           <Button 
-            variant="outline" 
-            size="lg"
-            onClick={() => portfolioId && syncPortfolioPrices(portfolioId)}
-            disabled={!portfolioId || isSyncing}
-            className="border-gold/30"
-          >
-            <RefreshCw className={`w-5 h-5 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Sincronizando...' : 'Atualizar Cotações'}
-          </Button>
-
-          <Button 
             variant="default" 
             size="lg"
             onClick={() => setIsAddTransactionModalOpen(true)}
@@ -337,6 +376,30 @@ export default function Portfolio() {
         currency={currentPortfolio?.currency || "BRL"}
         portfolioId={portfolioId || ""}
       />
+
+      <EditTransactionModal
+        open={isEditTransactionModalOpen}
+        onOpenChange={setIsEditTransactionModalOpen}
+        transaction={selectedTransaction}
+        currency={currentPortfolio?.currency || "BRL"}
+      />
+
+      <AlertDialog open={!!deleteTransactionId} onOpenChange={() => setDeleteTransactionId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar Transação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta transação? Esta ação não pode ser desfeita e irá recalcular suas posições.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTransaction} className="bg-danger hover:bg-danger/90">
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <PortfolioKPIs
         totalValue={totalValue}
@@ -360,7 +423,7 @@ export default function Portfolio() {
             <div className="p-6 border-b border-border/50">
               <h2 className="font-display text-2xl font-bold">Posições Abertas</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Ativos atualmente em carteira
+                Ativos atualmente em carteira • Cotações reais do Market
               </p>
             </div>
 
@@ -398,6 +461,7 @@ export default function Portfolio() {
                       const plPercent = (pl / pos.total_invested) * 100;
                       const allocation = totalValue > 0 ? (totalToday / totalValue) * 100 : 0;
                       const rebalanceAction = rebalanceActions[index] || { action: 'HOLD', message: 'Manter posição' };
+                      const marketData = marketPrices[pos.symbol];
 
                       return (
                         <tr key={pos.asset_id} className="hover:bg-secondary/30 transition-colors">
@@ -405,6 +469,11 @@ export default function Portfolio() {
                             <div>
                               <p className="font-semibold">{pos.symbol}</p>
                               <p className="text-sm text-muted-foreground">{pos.name}</p>
+                              {marketData && (
+                                <p className={`text-xs ${marketData.changePercent >= 0 ? 'text-success' : 'text-danger'}`}>
+                                  {marketData.changePercent >= 0 ? '+' : ''}{marketData.changePercent.toFixed(2)}% hoje
+                                </p>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">{pos.quantity.toFixed(2)}</td>
@@ -543,7 +612,7 @@ export default function Portfolio() {
             <div className="p-6 border-b border-border/50">
               <h2 className="font-display text-2xl font-bold">Histórico de Ordens</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Todas as operações executadas na carteira
+                Todas as operações executadas • Edite ou delete transações
               </p>
             </div>
 
@@ -563,6 +632,7 @@ export default function Portfolio() {
                       <th className="px-6 py-4 text-right text-sm font-semibold">Preço</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Corretagem</th>
                       <th className="px-6 py-4 text-right text-sm font-semibold">Total</th>
+                      <th className="px-6 py-4 text-center text-sm font-semibold">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
@@ -597,6 +667,26 @@ export default function Portfolio() {
                         </td>
                         <td className="px-6 py-4 text-right font-semibold text-foreground">
                           {currencySymbol} {tx.total.toFixed(2)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditTransaction(tx)}
+                              className="hover:bg-gold/10 hover:text-gold"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteTransactionId(tx.id)}
+                              className="hover:bg-danger/10 hover:text-danger"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}

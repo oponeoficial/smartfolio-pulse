@@ -1,3 +1,4 @@
+// src/services/brapi-sync.service.ts
 import axios from 'axios';
 import { supabase } from '@/lib/supabase';
 
@@ -12,18 +13,20 @@ class BrapiSyncService {
   private readonly token = 'iStxNTZSBUYE6JQBu8rhwX';
 
   /**
-   * Busca cotações de múltiplos tickers de uma vez (endpoint /list)
+   * Busca cotações de múltiplos tickers (endpoint correto: /quote/TICKER1,TICKER2,TICKER3)
    */
   async fetchMultipleQuotes(symbols: string[]): Promise<BrapiQuote[]> {
     if (symbols.length === 0) return [];
 
     try {
+      // Endpoint correto: /quote/{tickers} separados por vírgula
       const tickersParam = symbols.join(',');
       
-      const response = await axios.get(`${this.baseURL}/quote/list`, {
-        params: { tickers: tickersParam },
+      console.log(`🔄 Fetching ${symbols.length} quotes: ${tickersParam}`);
+      
+      const response = await axios.get(`${this.baseURL}/quote/${tickersParam}`, {
         headers: { Authorization: `Bearer ${this.token}` },
-        timeout: 10000,
+        timeout: 15000,
       });
 
       if (response.data?.results) {
@@ -36,6 +39,10 @@ class BrapiSyncService {
       
       if (error.response?.status === 429) {
         throw new Error('Rate limit atingido. Aguarde alguns minutos.');
+      }
+      
+      if (error.response?.status === 401) {
+        throw new Error('Token inválido. Verifique suas credenciais.');
       }
       
       throw error;
@@ -148,9 +155,27 @@ class BrapiSyncService {
       
       console.log(`🔄 Sincronizando TODOS os ${symbols.length} ativos ativos`);
 
-      const quotes = await this.fetchMultipleQuotes(symbols);
+      // Se houver muitos ativos, dividir em lotes de 10 para evitar URL muito longa
+      const batchSize = 10;
+      const batches: string[][] = [];
       
-      await this.savePricesToDatabase(quotes);
+      for (let i = 0; i < symbols.length; i += batchSize) {
+        batches.push(symbols.slice(i, i + batchSize));
+      }
+
+      console.log(`📦 Dividido em ${batches.length} lotes de até ${batchSize} ativos`);
+
+      for (const [index, batch] of batches.entries()) {
+        console.log(`🔄 Processando lote ${index + 1}/${batches.length}`);
+        
+        const quotes = await this.fetchMultipleQuotes(batch);
+        await this.savePricesToDatabase(quotes);
+        
+        // Delay entre lotes para evitar rate limit
+        if (index < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
 
       console.log('✅ Sincronização completa concluída');
     } catch (error) {

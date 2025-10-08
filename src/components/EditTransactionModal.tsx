@@ -1,7 +1,7 @@
-// src/components/AddTransactionModal.tsx
+// src/components/EditTransactionModal.tsx
 import { useState, useEffect } from "react";
-import { Calendar } from "lucide-react";
-import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { Calendar, Pencil } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { brapiService } from "@/services/brapi.service";
@@ -16,42 +16,43 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { cn } from "@/lib/utils";
 
-interface AddTransactionModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  currency: string;
-  portfolioId: string;
+interface Transaction {
+  id: string;
+  portfolio_id: string;
+  asset_id: string;
+  operation: 'BUY' | 'SELL';
+  quantity: number;
+  price: number;
+  brokerage: number;
+  total: number;
+  transaction_date: string;
+  asset?: {
+    symbol: string;
+    name: string;
+  };
 }
 
-export function AddTransactionModal({ open, onOpenChange, currency, portfolioId }: AddTransactionModalProps) {
-  const queryClient = useQueryClient();
-  
-  // Buscar ativos da aba Market (top 100 ações com cache de 24h)
-  const { data: marketStocks = [], isLoading: loadingStocks } = useQuery({
-    queryKey: ['market-stocks-for-transaction'],
-    queryFn: async () => {
-      const stocks = await brapiService.getTopStocks(100);
-      console.log(`✅ ${stocks.length} ações carregadas do Market para transações`);
-      return stocks;
-    },
-    staleTime: 24 * 60 * 60 * 1000, // 24h (mesma do Market)
-  });
+interface EditTransactionModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaction: Transaction | null;
+  currency: string;
+}
 
+export function EditTransactionModal({ 
+  open, 
+  onOpenChange, 
+  transaction,
+  currency 
+}: EditTransactionModalProps) {
+  const queryClient = useQueryClient();
   const [date, setDate] = useState<Date>(new Date());
-  const [selectedSymbol, setSelectedSymbol] = useState<string>("");
   const [operation, setOperation] = useState<"BUY" | "SELL">("BUY");
   const [quantity, setQuantity] = useState<string>("");
   const [price, setPrice] = useState<string>("");
@@ -61,15 +62,16 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
 
   const currencySymbol = currency === "BRL" ? "R$" : currency === "USD" ? "US$" : "€";
 
-  // Auto-preencher preço quando selecionar ativo
+  // Preencher campos quando transaction mudar
   useEffect(() => {
-    if (selectedSymbol && marketStocks.length > 0) {
-      const stock = marketStocks.find(s => s.symbol === selectedSymbol);
-      if (stock && !price) {
-        setPrice(stock.price.toFixed(2));
-      }
+    if (transaction) {
+      setDate(parse(transaction.transaction_date, 'yyyy-MM-dd', new Date()));
+      setOperation(transaction.operation);
+      setQuantity(transaction.quantity.toString());
+      setPrice(transaction.price.toString());
+      setBrokerage(transaction.brokerage.toString());
     }
-  }, [selectedSymbol, marketStocks]);
+  }, [transaction]);
 
   const calculateTotal = () => {
     const qty = parseFloat(quantity) || 0;
@@ -88,7 +90,6 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!selectedSymbol) newErrors.asset = "Selecione um ativo";
     if (!quantity || parseFloat(quantity) <= 0) newErrors.quantity = "Quantidade deve ser maior que 0";
     if (!price || parseFloat(price) <= 0) newErrors.price = "Preço deve ser maior que 0";
     if (date > new Date()) newErrors.date = "Data não pode ser futura";
@@ -98,71 +99,40 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!validate() || !transaction) return;
 
     setLoading(true);
 
     try {
-      // Buscar ou criar asset no Supabase
-      let assetId: string;
-      
-      const { data: existingAsset } = await supabase
-        .from('assets')
-        .select('id')
-        .eq('symbol', selectedSymbol)
-        .single();
-
-      if (existingAsset) {
-        assetId = existingAsset.id;
-      } else {
-        // Criar novo asset baseado nos dados do Market
-        const stock = marketStocks.find(s => s.symbol === selectedSymbol);
-        const { data: newAsset, error: createError } = await supabase
-          .from('assets')
-          .insert({
-            symbol: selectedSymbol,
-            name: stock?.name || selectedSymbol,
-            type: 'stock',
-            currency: 'BRL',
-            is_active: true,
-          })
-          .select('id')
-          .single();
-
-        if (createError) throw createError;
-        assetId = newAsset.id;
-      }
-
-      // Inserir transação
-      const { error } = await supabase.from('transactions').insert({
-        portfolio_id: portfolioId,
-        asset_id: assetId,
-        operation,
-        quantity: parseFloat(quantity),
-        price: parseFloat(price),
-        brokerage: parseFloat(brokerage),
-        total,
-        transaction_date: format(date, 'yyyy-MM-dd'),
-      });
+      const { error } = await supabase
+        .from('transactions')
+        .update({
+          operation,
+          quantity: parseFloat(quantity),
+          price: parseFloat(price),
+          brokerage: parseFloat(brokerage),
+          total,
+          transaction_date: format(date, 'yyyy-MM-dd'),
+        })
+        .eq('id', transaction.id);
 
       if (error) throw error;
 
-      await queryClient.invalidateQueries({ queryKey: ['positions', portfolioId] });
-      await queryClient.invalidateQueries({ queryKey: ['transactions', portfolioId] });
-      await queryClient.invalidateQueries({ queryKey: ['closed-positions', portfolioId] });
+      await queryClient.invalidateQueries({ queryKey: ['positions', transaction.portfolio_id] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions', transaction.portfolio_id] });
+      await queryClient.invalidateQueries({ queryKey: ['closed-positions', transaction.portfolio_id] });
 
       toast({
-        title: "Transação adicionada",
-        description: "A transação foi registrada com sucesso!",
+        title: "Transação atualizada",
+        description: "A transação foi atualizada com sucesso!",
       });
 
       onOpenChange(false);
-      resetForm();
     } catch (error: any) {
-      console.error('Erro ao salvar transação:', error);
+      console.error('Erro ao atualizar transação:', error);
       toast({
         title: "Erro",
-        description: error.message || "Erro ao adicionar transação. Tente novamente.",
+        description: error.message || "Erro ao atualizar transação. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -170,23 +140,18 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
     }
   };
 
-  const resetForm = () => {
-    setDate(new Date());
-    setSelectedSymbol("");
-    setOperation("BUY");
-    setQuantity("");
-    setPrice("");
-    setBrokerage("0");
-    setErrors({});
-  };
+  if (!transaction) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Adicionar Transação</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Pencil className="w-5 h-5 text-gold" />
+            Editar Transação
+          </DialogTitle>
           <DialogDescription>
-            Registre uma nova compra ou venda de ativos
+            {transaction.asset?.symbol} - {transaction.asset?.name}
           </DialogDescription>
         </DialogHeader>
 
@@ -219,35 +184,6 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
               </PopoverContent>
             </Popover>
             {errors.date && <p className="text-sm text-danger">{errors.date}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="asset">Ativo (Top 100 B3)</Label>
-            {loadingStocks ? (
-              <div className="text-sm text-muted-foreground">Carregando ativos...</div>
-            ) : (
-              <Select value={selectedSymbol} onValueChange={setSelectedSymbol} disabled={loading}>
-                <SelectTrigger id="asset" className={errors.asset ? "border-danger" : ""}>
-                  <SelectValue placeholder="Selecione o ativo" />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {marketStocks.map((stock) => (
-                    <SelectItem key={stock.symbol} value={stock.symbol}>
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="font-semibold">{stock.symbol}</span>
-                        <span className="text-sm text-muted-foreground truncate max-w-[200px]">
-                          {stock.name}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          R$ {stock.price.toFixed(2)}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            {errors.asset && <p className="text-sm text-danger">{errors.asset}</p>}
           </div>
 
           <div className="space-y-2">
@@ -296,11 +232,6 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
               disabled={loading}
             />
             {errors.price && <p className="text-sm text-danger">{errors.price}</p>}
-            {selectedSymbol && (
-              <p className="text-xs text-muted-foreground">
-                Preço atual do Market: R$ {marketStocks.find(s => s.symbol === selectedSymbol)?.price.toFixed(2) || '---'}
-              </p>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -331,8 +262,8 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancelar
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || loadingStocks}>
-            {loading ? "Salvando..." : "Adicionar Transação"}
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? "Salvando..." : "Atualizar Transação"}
           </Button>
         </DialogFooter>
       </DialogContent>
