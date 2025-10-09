@@ -97,44 +97,91 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validate()) return;
+const handleSubmit = async () => {
+  if (!validate()) return;
 
-    setLoading(true);
+  setLoading(true);
 
-    try {
-      // Buscar ou criar asset no Supabase
-      let assetId: string;
+  try {
+    // 🔍 DEBUG: Log antes de inserir
+    console.log('🔍 DEBUG TRANSACTION INSERT - BEFORE:', {
+      portfolioId,
+      selectedSymbol,
+      operation,
+      quantity: parseFloat(quantity),
+      price: parseFloat(price),
+      brokerage: parseFloat(brokerage),
+      total,
+      transaction_date: format(date, 'yyyy-MM-dd'),
+    });
+
+    // Buscar ou criar asset no Supabase
+    let assetId: string;
+    
+    const { data: existingAsset, error: assetSelectError } = await supabase
+      .from('assets')
+      .select('id')
+      .eq('symbol', selectedSymbol)
+      .single();
+
+    // 🔍 DEBUG: Log do asset
+    console.log('🔍 DEBUG ASSET SEARCH:', {
+      selectedSymbol,
+      existingAsset,
+      assetSelectError: assetSelectError?.message,
+    });
+
+    if (existingAsset) {
+      assetId = existingAsset.id;
+      console.log('✅ Asset encontrado:', assetId);
+    } else {
+      // Criar novo asset
+      const stock = marketStocks.find(s => s.symbol === selectedSymbol);
       
-      const { data: existingAsset } = await supabase
+      console.log('🔍 DEBUG CREATING ASSET:', {
+        symbol: selectedSymbol,
+        name: stock?.name || selectedSymbol,
+        type: 'stock',
+        currency: 'BRL',
+      });
+
+      const { data: newAsset, error: createError } = await supabase
         .from('assets')
+        .insert({
+          symbol: selectedSymbol,
+          name: stock?.name || selectedSymbol,
+          type: 'stock',
+          currency: 'BRL',
+          is_active: true,
+        })
         .select('id')
-        .eq('symbol', selectedSymbol)
         .single();
 
-      if (existingAsset) {
-        assetId = existingAsset.id;
-      } else {
-        // Criar novo asset baseado nos dados do Market
-        const stock = marketStocks.find(s => s.symbol === selectedSymbol);
-        const { data: newAsset, error: createError } = await supabase
-          .from('assets')
-          .insert({
-            symbol: selectedSymbol,
-            name: stock?.name || selectedSymbol,
-            type: 'stock',
-            currency: 'BRL',
-            is_active: true,
-          })
-          .select('id')
-          .single();
-
-        if (createError) throw createError;
-        assetId = newAsset.id;
+      if (createError) {
+        console.error('❌ ERRO AO CRIAR ASSET:', createError);
+        throw createError;
       }
+      
+      assetId = newAsset.id;
+      console.log('✅ Asset criado:', assetId);
+    }
 
-      // Inserir transação
-      const { error } = await supabase.from('transactions').insert({
+    // 🔍 DEBUG: Log antes do INSERT final
+    console.log('🔍 DEBUG TRANSACTION INSERT - PAYLOAD:', {
+      portfolio_id: portfolioId,
+      asset_id: assetId,
+      operation,
+      quantity: parseFloat(quantity),
+      price: parseFloat(price),
+      brokerage: parseFloat(brokerage),
+      total,
+      transaction_date: format(date, 'yyyy-MM-dd'),
+    });
+
+    // Inserir transação
+    const { data: insertedTransaction, error: insertError } = await supabase
+      .from('transactions')
+      .insert({
         portfolio_id: portfolioId,
         asset_id: assetId,
         operation,
@@ -143,32 +190,52 @@ export function AddTransactionModal({ open, onOpenChange, currency, portfolioId 
         brokerage: parseFloat(brokerage),
         total,
         transaction_date: format(date, 'yyyy-MM-dd'),
-      });
+      })
+      .select(); // 🔍 ADICIONAR .select() para ver o que foi inserido
 
-      if (error) throw error;
+    // 🔍 DEBUG: Log do resultado
+    console.log('🔍 DEBUG TRANSACTION INSERT - RESULT:', {
+      insertedTransaction,
+      insertError: insertError?.message,
+      insertErrorDetails: insertError,
+    });
 
-      await queryClient.invalidateQueries({ queryKey: ['positions', portfolioId] });
-      await queryClient.invalidateQueries({ queryKey: ['transactions', portfolioId] });
-      await queryClient.invalidateQueries({ queryKey: ['closed-positions', portfolioId] });
-
-      toast({
-        title: "Transação adicionada",
-        description: "A transação foi registrada com sucesso!",
-      });
-
-      onOpenChange(false);
-      resetForm();
-    } catch (error: any) {
-      console.error('Erro ao salvar transação:', error);
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao adicionar transação. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (insertError) {
+      console.error('❌ ERRO NO INSERT:', insertError);
+      throw insertError;
     }
-  };
+
+    console.log('✅ TRANSAÇÃO INSERIDA COM SUCESSO:', insertedTransaction);
+
+    await queryClient.invalidateQueries({ queryKey: ['positions', portfolioId] });
+    await queryClient.invalidateQueries({ queryKey: ['transactions', portfolioId] });
+    await queryClient.invalidateQueries({ queryKey: ['closed-positions', portfolioId] });
+
+    toast({
+      title: "Transação adicionada",
+      description: "A transação foi registrada com sucesso!",
+    });
+
+    onOpenChange(false);
+    
+    // Reset form
+    setSelectedSymbol("");
+    setQuantity("");
+    setPrice("");
+    setBrokerage("0");
+    setDate(new Date());
+    
+  } catch (error: any) {
+    console.error('❌ ERRO GERAL:', error);
+    toast({
+      title: "Erro",
+      description: error.message || "Erro ao adicionar transação. Tente novamente.",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const resetForm = () => {
     setDate(new Date());

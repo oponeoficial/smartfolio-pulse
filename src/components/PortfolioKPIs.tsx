@@ -1,7 +1,8 @@
-import { TrendingUp, Wallet, Target, Zap, RefreshCw } from "lucide-react";
+// src/components/PortfolioKPIs.tsx
+import { TrendingUp, Target, Zap, RefreshCw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
-interface KPIProps {
+interface PortfolioKPIsProps {
   totalValue: number;
   totalValueChange: number;
   totalReturn: number;
@@ -9,6 +10,7 @@ interface KPIProps {
   cdiComparison: number;
   rebalanceStatus: 'good' | 'warning' | 'critical';
   daysUntilRebalance: number;
+  currencySymbol?: string; // NOVO: Moeda da carteira
 }
 
 export function PortfolioKPIs({
@@ -19,7 +21,16 @@ export function PortfolioKPIs({
   cdiComparison,
   rebalanceStatus,
   daysUntilRebalance,
-}: KPIProps) {
+  currencySymbol = "R$", // Default: Real brasileiro
+}: PortfolioKPIsProps) {
+  
+  const getDiversificationMessage = () => {
+    if (diversificationScore >= 70) return "Bem diversificado";
+    if (diversificationScore >= 40) return "Diversificação moderada";
+    if (diversificationScore >= 10) return "Pouco diversificado";
+    return "Sem diversificação";
+  };
+
   const getRebalanceColor = () => {
     if (rebalanceStatus === 'good') return 'text-success';
     if (rebalanceStatus === 'warning') return 'text-warning';
@@ -27,39 +38,33 @@ export function PortfolioKPIs({
   };
 
   const getRebalanceIcon = () => {
-    if (rebalanceStatus === 'good') return '✅';
-    if (rebalanceStatus === 'warning') return '⚠️';
-    return '❌';
+    if (rebalanceStatus === 'good') return '✓';
+    if (rebalanceStatus === 'warning') return '⚠';
+    return '✕';
   };
 
   const getRebalanceMessage = () => {
-    if (rebalanceStatus === 'good') return 'Tudo certo';
+    if (rebalanceStatus === 'good') return 'Balanceado';
     if (rebalanceStatus === 'warning') return 'Atenção';
     return 'Necessário';
   };
 
-  const getDiversificationMessage = () => {
-    if (diversificationScore >= 70) return 'Bem diversificado';
-    if (diversificationScore >= 50) return 'Moderadamente diversificado';
-    return 'Pouco diversificado';
-  };
-
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
       {/* KPI 1: Patrimônio Total */}
       <div className="glass-card p-6 hover-glow animate-fade-in">
         <div className="flex items-start justify-between mb-3">
-          <div className="p-3 rounded-lg bg-success/10 border border-success/20">
-            <TrendingUp className="w-6 h-6 text-success" />
+          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <TrendingUp className="w-6 h-6 text-primary" />
           </div>
         </div>
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">Patrimônio Total</p>
           <p className="text-3xl font-display font-bold">
-            R$ {totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol} {totalValue.toFixed(2)}
           </p>
-          <p className={`text-xs ${totalValueChange >= 0 ? 'text-success' : 'text-danger'}`}>
-            {totalValueChange >= 0 ? '+' : ''}{totalValueChange.toFixed(1)}% hoje
+          <p className={`text-sm ${totalValueChange >= 0 ? 'text-success' : 'text-danger'}`}>
+            {totalValueChange >= 0 ? '+' : ''}{totalValueChange.toFixed(2)}% hoje
           </p>
         </div>
       </div>
@@ -67,8 +72,8 @@ export function PortfolioKPIs({
       {/* KPI 2: Retorno Total */}
       <div className="glass-card p-6 hover-glow animate-fade-in" style={{ animationDelay: '100ms' }}>
         <div className="flex items-start justify-between mb-3">
-          <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-            <Wallet className="w-6 h-6 text-primary" />
+          <div className={`p-3 rounded-lg ${totalReturn >= 0 ? 'bg-success/10 border-success/20' : 'bg-danger/10 border-danger/20'} border`}>
+            <TrendingUp className={`w-6 h-6 ${totalReturn >= 0 ? 'text-success' : 'text-danger'}`} />
           </div>
         </div>
         <div className="space-y-1">
@@ -89,7 +94,7 @@ export function PortfolioKPIs({
         </div>
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">Diversificação</p>
-          <p className="text-3xl font-display font-bold">{diversificationScore}%</p>
+          <p className="text-3xl font-display font-bold">{diversificationScore.toFixed(0)}%</p>
           <div className="space-y-1">
             <Progress value={diversificationScore} className="h-2" />
             <p className="text-xs text-muted-foreground">{getDiversificationMessage()}</p>
@@ -106,8 +111,8 @@ export function PortfolioKPIs({
         </div>
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">Retorno vs CDI</p>
-          <p className="text-3xl font-display font-bold text-accent">
-            {cdiComparison.toFixed(0)}% do CDI
+          <p className={`text-3xl font-display font-bold ${cdiComparison >= 0 ? 'text-accent' : 'text-danger'}`}>
+            {cdiComparison >= 0 ? '+' : ''}{cdiComparison.toFixed(0)}% do CDI
           </p>
           <p className="text-xs text-muted-foreground">
             CDI: 12.5% vs Seu: {totalReturn.toFixed(1)}%
